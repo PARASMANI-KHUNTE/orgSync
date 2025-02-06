@@ -30,9 +30,12 @@ app.use("/api/superadmin",adminRoute);
 const serviceRoute = require('./Routes/Services')
 app.use('/api/services',serviceRoute)
 
+const OrgRoute = require('./Routes/Organization')
+app.use('/api/org',OrgRoute)
 
 
-
+const BranchRoute = require('./Routes/Branch')
+app.use('/api/branch',BranchRoute)
 
 
 

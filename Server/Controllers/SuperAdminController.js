@@ -1,6 +1,5 @@
 const argon2 = require('argon2')
 const SuperAdmin = require('../models/SuperAdmin')
-const Organization = require('../models/Organization')
 const {generateToken} = require('../Utils/TokenService')
 
 exports.CheckForExistenceData = async (req, res) => {

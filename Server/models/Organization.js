@@ -10,10 +10,10 @@ const OrganizationSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    Branch: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Branch"
-    }]
+    AdminId  : {
+        type : mongoose.Schema.Types.ObjectId,
+        ref : "SuperAdmin"
+    }
 }, { timestamps: true });
 
 module.exports = mongoose.model("Organization", OrganizationSchema);

@@ -2,7 +2,18 @@ const express = require('express');
 const router = express.Router();
 
 
-router.post('/Signup',Signup),
+const {
+     checkEmployeeFace , 
+     CheckForExistenceData  , 
+     SaveSignupData,
+     login,
+     updatePassword}
+     = require('../Controllers/EmployeeController')
+
+
+router.get('/checkFace',checkEmployeeFace)
+router.get("/checkdata",CheckForExistenceData)
+router.post('/Signup',SaveSignupData),
 router.post('/Login',login),
 router.post('/update-password',updatePassword);
 

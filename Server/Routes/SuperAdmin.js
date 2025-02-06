@@ -13,7 +13,7 @@ const {
 router.get('/verifyData',CheckForExistenceData),
 router.post('/SaveSignupData',SaveSignupData),
 router.post('/Login',login),
-router.put('/update-password',authMiddleware,updatePassword);
+router.post('/update-password',authMiddleware,updatePassword);
 
 
 module.exports = router;

@@ -5,12 +5,14 @@ exports.OtpSend = async (req,res)=>{
         const {email } = req.body;
         if(!email){
             return res.status(400).json({
+                success : true,
                 status : false,
                 message : "Please provide Email"
             })
         }
         await sendOTP(email)
         return res.status(200).json({
+            success : true,
             status : true,
             message : `Otp has been send to ${email}`
         })
