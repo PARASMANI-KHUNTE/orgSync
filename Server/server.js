@@ -38,6 +38,8 @@ const BranchRoute = require('./Routes/Branch')
 app.use('/api/branch',BranchRoute)
 
 
+const BranchManagerRoute = require('./Routes/BranchManager')
+app.use('/api/BranchManager',BranchManagerRoute)
 
 
 

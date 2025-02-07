@@ -7,7 +7,7 @@ import AdminLogin from './Pages/Auth/AdminLogin'
 import BranchManager from './Pages/Auth/BranchManager'
 import EmployeeLogin from './Pages/Auth/EmployeeLogin'
 import AdminDashboard from './Pages/AdminDashboard'
-
+import SetPassword from './Components/SetPassword'
 
 const App = () => {
   return (
@@ -22,6 +22,7 @@ const App = () => {
         <Route path='/employees' element={<AdminDashboard />}/>
         <Route path='/profile' element={<AdminDashboard />}/>
         <Route path='/settings' element={<AdminDashboard />}/>
+        <Route path="/set-password/:token" element={<SetPassword />} />
 
       </Routes>
     </Router>

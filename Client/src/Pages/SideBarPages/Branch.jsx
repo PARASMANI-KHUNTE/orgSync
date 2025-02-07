@@ -1,90 +1,150 @@
-import  { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PlusCircle, Edit2, Trash2, X } from 'lucide-react';
+import api from '../../utils/api'
 
-import axios from 'axios';
-
-const Branch = () => {
-  const [branches, setBranches] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ Name: '', Location: '' });
-  const [editingId, setEditingId] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+// API handlers
+const branchAPI = {
+ 
+  fetch: async () => {
+    const response = await api.get('/branch/getBranches');
+    return response.data;
+  },
   
+  add: async (data) => {
+    const response = await api.post('/branch/addBranch', data);
+    return response.data;
+  },
+  
+  update: async (id, data ) => {
+    const response = await api.put(`/branch/updateBranch`,{Name : data.Name, Location : data.Location , branchId : id });
+    return response.data;
+  },
+  
+  delete: async (id) => {
+    console.log(`Id - ${id}`)
+    const response = await api.delete('/branch/deleteBranch', { data: { id } });
+    return response.data;
+  }
+};
+
+// Modal component
+const BranchModal = ({ isOpen, onClose, onSubmit, editingBranch, loading }) => {
+
+
+  const [formData, setFormData] = useState({ Name: '', Location: '' });
 
   useEffect(() => {
-    fetchBranches();
-  }, []);
+    if (editingBranch) {
+    
+      setFormData({ Name: editingBranch.Name, Location: editingBranch.Location });
+    } else {
+      setFormData({ Name: '', Location: '' });
+    }
+  }, [editingBranch]);
 
-  // API Calls
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        >
+          <motion.div
+            initial={{ scale: 0.9 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0.9 }}
+            className="bg-white rounded-lg p-6 w-full max-w-md"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">
+                {editingBranch ? 'Edit Branch' : 'Add Branch'}
+              </h2>
+              <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+                <X size={24} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block mb-2">Branch Name</label>
+                <input
+                  type="text"
+                  value={formData.Name}
+                  onChange={(e) => setFormData({ ...formData, Name: e.target.value })}
+                  className="w-full p-2 border rounded-lg"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block mb-2">Location</label>
+                <input
+                  type="text"
+                  value={formData.Location}
+                  onChange={(e) => setFormData({ ...formData, Location: e.target.value })}
+                  className="w-full p-2 border rounded-lg"
+                  required
+                />
+              </div>
+              <button 
+                type="submit"
+                disabled={loading}
+                className="w-full bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                {loading ? 'Processing...' : editingBranch ? 'Update' : 'Add Branch'}
+              </button>
+            </form>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+// Main component
+const Branch = () => {
+  
+  const [branches, setBranches] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingBranch, setEditingBranch] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
   const fetchBranches = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/branch');
-      if (response.data.success) {
-        setBranches(response.data.data);
+      const result = await branchAPI.fetch();
+      if (result.success) {
+        setBranches(result.data);
       }
     } catch (err) {
       setError('Failed to fetch branches');
-      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddBranch = async (branchData) => {
+  const handleSubmit = async (formData) => {
     try {
-      const response = await axios.post('/api/branch/addBranch', branchData);
-      if (response.data.success) {
+      setLoading(true);
+      setError('');
+      
+      const handler = editingBranch
+        ? () => branchAPI.update(editingBranch._id, formData)
+        : () => branchAPI.add(formData);
+      
+      const result = await handler();
+      if (result.success) {
         fetchBranches();
-        return true;
+        handleCloseModal();
       }
-      return false;
-    } catch (err) {
-      throw err;
-    }
-  };
-
-  const handleUpdateBranch = async (branchId, branchData) => {
-    try {
-      const response = await axios.put(`/api/branch/updateBranch/${branchId}`, branchData);
-      if (response.data.success) {
-        fetchBranches();
-        return true;
-      }
-      return false;
-    } catch (err) {
-      throw err;
-    }
-  };
-
-  const handleDeleteBranch = async (branchId) => {
-    try {
-      const response = await axios.delete(`/api/branch/deleteBranch/${branchId}`);
-      if (response.data.success) {
-        fetchBranches();
-        return true;
-      }
-      return false;
-    } catch (err) {
-      throw err;
-    }
-  };
-
-  // Event Handlers
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    
-    try {
-      if (editingId) {
-        await handleUpdateBranch(editingId, formData);
-      } else {
-        await handleAddBranch(formData);
-      }
-      handleCloseModal();
     } catch (err) {
       setError(err.response?.data?.message || 'Operation failed');
     } finally {
@@ -93,12 +153,15 @@ const Branch = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this branch?')) {
+    if (window.confirm('Delete this branch?')) {
       try {
         setLoading(true);
-        await handleDeleteBranch(id);
+        const result = await branchAPI.delete(id);
+        if (result.success) {
+          fetchBranches();
+        }
       } catch (err) {
-        setError('Failed to delete branch');
+        setError('Deletion failed');
       } finally {
         setLoading(false);
       }
@@ -106,37 +169,30 @@ const Branch = () => {
   };
 
   const handleEdit = (branch) => {
-    setFormData({ Name: branch.Name, Location: branch.Location });
-    setEditingId(branch._id);
+    setEditingBranch(branch);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setFormData({ Name: '', Location: '' });
-    setEditingId(null);
+    setEditingBranch(null);
     setError('');
   };
 
-  if (loading && !branches.length) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    fetchBranches();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
-      <motion.div
+      <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-6xl mx-auto"
+        className="max-w-4xl mx-auto"
       >
-        {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Branch Management</h1>
-          <button
+          <button 
             onClick={() => setIsModalOpen(true)}
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
@@ -145,15 +201,13 @@ const Branch = () => {
           </button>
         </div>
 
-        {/* Error Message */}
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             {error}
           </div>
         )}
 
-        {/* Branches Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           <AnimatePresence>
             {branches.map((branch) => (
               <motion.div
@@ -161,20 +215,20 @@ const Branch = () => {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+                className="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-all"
               >
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">{branch.Name}</h3>
+                <h3 className="text-xl font-semibold mb-2">{branch.Name}</h3>
                 <p className="text-gray-600 mb-4">{branch.Location}</p>
-                <div className="flex justify-end gap-2">
-                  <button
+                <div className="flex justify-end space-x-2">
+                  <button 
                     onClick={() => handleEdit(branch)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                    className="text-blue-500 hover:bg-blue-50 p-2 rounded-full"
                   >
                     <Edit2 size={18} />
                   </button>
-                  <button
+                  <button 
                     onClick={() => handleDelete(branch._id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                    className="text-red-500 hover:bg-red-50 p-2 rounded-full"
                   >
                     <Trash2 size={18} />
                   </button>
@@ -184,73 +238,13 @@ const Branch = () => {
           </AnimatePresence>
         </div>
 
-        {/* Modal */}
-        <AnimatePresence>
-          {isModalOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-white rounded-lg p-6 w-full max-w-md"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-bold">
-                    {editingId ? 'Edit Branch' : 'Add Branch'}
-                  </h2>
-                  <button
-                    onClick={handleCloseModal}
-                    className="text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    <X size={24} />
-                  </button>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Branch Name
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.Name}
-                      onChange={(e) => setFormData({ ...formData, Name: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Location
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.Location}
-                      onChange={(e) => setFormData({ ...formData, Location: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400"
-                  >
-                    {loading ? 'Processing...' : editingId ? 'Update Branch' : 'Add Branch'}
-                  </button>
-                </form>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <BranchModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          onSubmit={handleSubmit}
+          editingBranch={editingBranch}
+          loading={loading}
+        />
       </motion.div>
     </div>
   );

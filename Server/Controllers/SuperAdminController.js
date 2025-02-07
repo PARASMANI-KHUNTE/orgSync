@@ -90,7 +90,7 @@ exports.login = async (req,res) =>{
             userId : user.id,
             userName : user.Name,
             userEmail : user.Email,
-            userPhone : user.Phone
+            userPhone : user.Phone,
         }
 
 

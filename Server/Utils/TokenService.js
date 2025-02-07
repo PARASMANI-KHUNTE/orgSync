@@ -1,7 +1,7 @@
 const jsonwebtoken = require('jsonwebtoken');
 
 const generateToken = async (payload) => {
-    return jsonwebtoken.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' });
+    return jsonwebtoken.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
 }
 
 
@@ -10,7 +10,7 @@ const generateTokenForPassword = (userId) => {
   const token = jsonwebtoken.sign(
     { userId }, // payload
     secretKey,
-    { expiresIn: '24h' } // token valid for 24 hours
+    { expiresIn: '1h' } // token valid for 24 hours
   );
   return token;
 };

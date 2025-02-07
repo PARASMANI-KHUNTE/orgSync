@@ -8,7 +8,8 @@ const BranchManagerSchema = new mongoose.Schema({
     },
     Name: {
         type: String,
-        required: true
+        required: true,
+        unique: true,
     },
     Email: {
         type: String,
@@ -20,6 +21,21 @@ const BranchManagerSchema = new mongoose.Schema({
         unique: true,
         required: true,
         match: [/^[6-9]\d{9}$/, "Please enter a valid 10-digit phone number"]
+    },
+    Password : {
+        type : String,
+    },
+    Verified : {
+        type :Boolean,
+        default : false
+    },
+    OrgId : {
+            type : mongoose.Schema.Types.ObjectId,
+            ref : "Organization"
+    },
+    branchId : {
+            type : mongoose.Schema.Types.ObjectId,
+            ref : "Branch"
     }
 }, { timestamps: true });
 

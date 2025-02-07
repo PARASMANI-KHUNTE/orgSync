@@ -89,7 +89,9 @@ const Profile = () => {
   return (
     <motion.div className="max-w-lg mx-auto mt-10 p-6 bg-white shadow-lg rounded-lg">
       <h2 className="text-2xl font-semibold text-gray-800">Profile</h2>
+      <p className="text-gray-600 mt-1">{user.userName}</p>
       <p className="text-gray-600 mt-1">{user.userEmail}</p>
+      <p className="text-gray-600 mt-1">{user.userPhone}</p>
 
       <div className="mt-6">
         {/* Progress indicator */}

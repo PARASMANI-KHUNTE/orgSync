@@ -1,0 +1,284 @@
+const BranchManager = require('../models/BranchManager')
+const Organization = require('../models/Organization')
+const argon2 = require('argon2')
+exports.getBranchManagers = async(req,res)=>{
+    try {
+        const {AdminId} = req.body;
+        
+        if(!AdminId){
+            return res.status(400).json({
+                success : false,
+                message : "Missing data"
+            })
+        }
+
+        const org = await Organization.findOne({AdminId})
+        if(!org){
+            return res.status(400).json({
+                success : false,
+                message : "No organization found"
+            })
+        }
+
+        const BranchManagers = await BranchManager.find({OrgId : org.id})
+        if(!BranchManagers){
+            return res.status(400).json({
+                success : false,
+                message : "No Brach Manager found"
+            })
+        }
+
+        return res.status(200).json({
+            success : true,
+            message : "Got all the Managers",
+            BranchManagers
+        })
+    } catch (error) {
+        return res.status(500).json({
+            success : false,
+            message :`Error - ${error}`
+        })
+        
+    }
+}
+exports.addBranchManager  = async(req,res)=>{
+    try {
+        const {EmployeeID , Name , Email , Phone , AdminId } = req.body;
+        if(!EmployeeID || !Name || !Email || !Phone || !AdminId){
+            return res.status(400).json({
+                success : false,
+                message : "Data is missing"
+            })
+        }
+
+        const CheckValidation = await BranchManager.findOne({EmployeeID , Name , Email , Phone})
+        if(CheckValidation){
+            return res.status(400).json({
+                success : false,
+                message : "User already Exist"
+            })
+        }
+
+        const org = await Organization.findOne({AdminId})
+        if(!org){
+            return res.status(400).json({
+                success : false,
+                message : "No Organization Found"
+            })
+        }
+
+        const NewBranchManager = new BranchManager({
+            EmployeeID , Name , Email , Phone , OrgId : org.id
+        })
+
+        await NewBranchManager.save()
+
+        return res.status(200).json({
+            success : true,
+            message : "Data has been saved"
+        })
+
+
+    } catch (error) {
+        return res.status(500).json({
+            success : false,
+            message :`Error - ${error}`
+        })
+        
+    }
+}
+exports.removeBranchManager = async(req,res)=>{
+    try {
+        const { id } = req.body;
+        const BM = await BranchManager.findOneAndDelete(id);
+        if (!BM) {
+            return res.status(404).json({
+            success: false,
+            message: "Branch not found"
+            });
+        }
+          
+        return res.status(200).json({
+            success: true,
+            message: "Branch deleted successfully"
+        });
+          
+        } catch (error) {
+            return res.status(500).json({
+                success: false,
+                message: "Internal server error"
+              });
+        }
+}
+exports.updateBranchManager = async(req,res)=>{
+    try {
+        const {EmployeeID , Name , Email , Phone  , BmId } = req.body;
+        if(!EmployeeID || !Name || !Email || !Phone || !BmId ){
+            return res.status(400).json({
+                success : false,
+                message : "Data is missing"
+            })
+        }
+        const CheckValidation = await BranchManager.findOne({
+            EmployeeID,
+            Name,
+            Email,
+            Phone,
+            _id: { $ne: BmId } // Exclude the branch with this ID
+        });
+
+        if(CheckValidation){
+            return res.status(400).json({
+                success : false,
+                message : "These Info Already present"
+            })
+        }
+        
+        
+        const updatedBranchManager = await BranchManager.findByIdAndUpdate(
+            BmId,
+                { EmployeeID , Name , Email , Phone },
+                { new: true }
+              );
+
+              return res.status(200).json({
+                success: true,
+                message: "BranchManager updated successfully",
+                data: updatedBranchManager
+              });
+    } catch (error) {
+        return res.status(500).json({
+            success : false,
+            message :`Error - ${error}`
+        })
+        
+    }
+}
+exports.assignBranch = async(req,res)=>{
+    try {
+        const { branchId , BmId} = req.body;
+        if(!branchId || !BmId){
+            return res.status(400).json({
+                success : false,
+                message : "Data is missing"
+            })
+        }
+        const user = await BranchManager.findById(BmId)
+        if(!user){
+            return res.status(400).json({
+                success : false ,
+                messsage : "invalid User id "
+            })
+        }
+        if(!user.Verified){
+            return res.status(404).json({
+                success : false ,
+                messsage : "user is not verified "
+            })
+        }
+        const BranchM = await BranchManager.findByIdAndUpdate(BmId,{branchId}, { new: true })
+        return res.status(200).json({
+            success : true ,
+            message : "Branch as been assigned to the user",
+            BranchM
+        })
+
+    } catch (error) {
+        return res.status(500).json({
+            success : false,
+            message :`Error - ${error}`
+        })
+        
+    }
+}
+
+
+
+// Backend: BranchManagerController.js
+const jwt = require('jsonwebtoken');
+const {sendLink} = require('../Utils/OtpService')
+
+exports.sendVerificationLink = async (req, res) => {
+  try {
+    const { id } = req.body;
+    
+    const manager = await BranchManager.findById(id);
+    if (!manager) {
+      return res.status(404).json({
+        success: false,
+        message: "Manager not found"
+      });
+    }
+
+    // Create verification token
+    const token = jwt.sign(
+      { id: manager._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    // Create verification link
+    const verificationLink = `${process.env.FRONTEND_URL}/set-password/${token}`;
+
+    // Send email with verification link
+    // Using your email service (nodemailer, sendgrid, etc.)
+    await sendLink({
+        to: manager.Email,
+        subject: "Verify Your Account",
+        html: `<h1>Welcome</h1><p>Click <a href="${verificationLink}">here</a> to verify.</p>`,
+      });
+      
+
+    return res.status(200).json({
+      success: true,
+      message: "Verification link sent successfully"
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to send verification link"
+    });
+  }
+};
+
+exports.setPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    const hashedPassword = await argon2.hash(password);
+
+    // Update user
+    const manager = await BranchManager.findByIdAndUpdate(
+      decoded.id,
+      {
+        Password: hashedPassword,
+        Verified: true
+      },
+      { new: true }
+    );
+
+    if (!manager) {
+      return res.status(404).json({
+        success: false,
+        message: "Manager not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Password set successfully"
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message === 'jwt expired' ? 
+        "Verification link has expired" : 
+        "Failed to set password"
+    });
+  }
+};

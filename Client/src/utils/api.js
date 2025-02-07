@@ -11,14 +11,14 @@ const api = axios.create({
 // Add console logs to debug token handling
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  console.log('Current token:', token); // Debug log
+
   
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-    console.log('Headers after setting token:', config.headers); // Debug log
+
   } else {
     delete config.headers.Authorization;
-    console.log('No token found in localStorage');
+
   }
   return config;
 });
@@ -26,7 +26,7 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.log('API Error:', error.response); // Debug log
+  
     if (error.response) {
       if (error.response.status === 401) {
         toast.error('Session expired. Please log in again.');
