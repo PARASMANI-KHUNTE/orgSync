@@ -163,3 +163,52 @@ exports.deleteBranch = async (req, res) => {
     });
   }
 };
+
+
+exports.getBranchById = async (req, res) => {
+  try {
+    const userId = req.user?.payload?.userId;
+    const branchId = req.params.branchId; // Get branch ID from request parameters
+
+    if (!userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized: User ID missing",
+      });
+    }
+
+    // First check if user belongs to organization
+    const org = await Organization.findOne({ AdminId: userId });
+    if (!org) {
+      return res.status(404).json({
+        success: false,
+        message: "No organization found for this user",
+      });
+    }
+
+    // Find specific branch by ID and ensure it belongs to user's organization
+    const branch = await Branch.findOne({ 
+      _id: branchId,
+      OrgId: org._id 
+    }).select("Name Location createdAt updatedAt");
+
+    if (!branch) {
+      return res.status(404).json({
+        success: false,
+        message: "Branch not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Branch fetched successfully",
+      data: branch,
+    });
+  } catch (error) {
+    console.error("Error in getBranchById:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};

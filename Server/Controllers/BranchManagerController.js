@@ -1,6 +1,8 @@
 const BranchManager = require('../models/BranchManager')
 const Organization = require('../models/Organization')
 const argon2 = require('argon2')
+const {generateToken} = require('../Utils/TokenService')
+
 exports.getBranchManagers = async(req,res)=>{
     try {
         const {AdminId} = req.body;
@@ -282,3 +284,85 @@ exports.setPassword = async (req, res) => {
     });
   }
 };
+
+
+
+
+exports.login = async (req,res) =>{
+    try{
+        const {Email , Password} = req.body;
+        if(!Email , !Password){
+            return res.status(400).json({
+                messsage : "Missing Fields",
+            })
+        }
+        const user = await BranchManager.findOne({Email});
+        const verifyPassword = await argon2.verify(user.Password,Password)
+        if(!verifyPassword){
+            return res.status(404).json({
+                success : false,
+                message : "invalid Creditentials"
+            })
+        }
+
+        const payload = {
+            userId : user.id,
+            userName : user.Name,
+            userEmail : user.Email,
+            userPhone : user.Phone,
+        }
+
+
+        const token = await generateToken(payload)
+        
+        return res.status(200).json({
+            success : true,
+            message : "Successfully Login",
+            token
+        })
+    }catch(error){
+        console.log(error)
+    }
+}
+exports.updatePassword = async (req, res) => {
+    try {
+        const { Password } = req.body;
+        
+        if (!Password) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing field"
+            });
+        }
+
+        // Get User ID from Token Payload
+        const userId = req.user.payload?.userId; // Assuming payload contains { user: { id: '...' } }
+        
+        if (!userId) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized: User ID missing"
+            });
+        }
+
+        // Hash new password
+        const hashedPassword = await argon2.hash(Password);
+
+        // Update password in database
+        await BranchManager.findByIdAndUpdate(userId, { Password: hashedPassword });
+
+        return res.status(200).json({
+            success: true,
+            message: "Password has been updated."
+        });
+
+    } catch (error) {
+        console.error("Error updating password:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            error: error.message
+        });
+    }
+};
+

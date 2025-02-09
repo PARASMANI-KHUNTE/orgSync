@@ -1,9 +1,20 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PlusCircle, Edit2, Trash2, X, Send, Check, AlertCircle } from 'lucide-react';
+import { 
+  PlusCircle, 
+  Edit2, 
+  Trash2, 
+  X, 
+  Send, 
+  Check, 
+  AlertCircle,
+  Loader2
+} from 'lucide-react';
+import PropTypes from 'prop-types';
 import api from '../../utils/api';
-import { useAuth } from "../../context/AuthContext"; // Adjust the import path as needed
+import { useAuth } from "../../context/AuthContext";
 import { toast } from 'react-toastify';
+
 const EmployeeModal = ({ isOpen, onClose, onSubmit, editingEmployee, loading }) => {
   const [formData, setFormData] = useState({
     EmployeeID: '',
@@ -15,10 +26,10 @@ const EmployeeModal = ({ isOpen, onClose, onSubmit, editingEmployee, loading }) 
   useEffect(() => {
     if (editingEmployee) {
       setFormData({
-        EmployeeID: editingEmployee.EmployeeID,
-        Name: editingEmployee.Name,
-        Email: editingEmployee.Email,
-        Phone: editingEmployee.Phone
+        EmployeeID: editingEmployee.EmployeeID || '',
+        Name: editingEmployee.Name || '',
+        Email: editingEmployee.Email || '',
+        Phone: editingEmployee.Phone || ''
       });
     } else {
       setFormData({
@@ -103,7 +114,7 @@ const EmployeeModal = ({ isOpen, onClose, onSubmit, editingEmployee, loading }) 
               <button 
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-colors"
+                className="w-full bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-300"
               >
                 {loading ? 'Processing...' : editingEmployee ? 'Update' : 'Add Manager'}
               </button>
@@ -113,6 +124,24 @@ const EmployeeModal = ({ isOpen, onClose, onSubmit, editingEmployee, loading }) 
       )}
     </AnimatePresence>
   );
+};
+
+EmployeeModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func.isRequired,
+  editingEmployee: PropTypes.shape({
+    _id: PropTypes.string,
+    EmployeeID: PropTypes.string,
+    Name: PropTypes.string,
+    Email: PropTypes.string,
+    Phone: PropTypes.string
+  }),
+  loading: PropTypes.bool.isRequired
+};
+
+EmployeeModal.defaultProps = {
+  editingEmployee: null
 };
 
 const AssignBranchModal = ({ isOpen, onClose, onSubmit, managerId, loading }) => {
@@ -128,11 +157,14 @@ const AssignBranchModal = ({ isOpen, onClose, onSubmit, managerId, loading }) =>
         }
       } catch (error) {
         console.error('Error fetching branches:', error);
+        toast.error('Failed to fetch branches');
       }
     };
 
-    fetchBranches();
-  }, []);
+    if (isOpen) {
+      fetchBranches();
+    }
+  }, [isOpen]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -173,7 +205,7 @@ const AssignBranchModal = ({ isOpen, onClose, onSubmit, managerId, loading }) =>
                   <option value="">Select a branch</option>
                   {branches.map((branch) => (
                     <option key={branch._id} value={branch._id}>
-                      {branch.Name}
+                      {branch.Name} - {branch.Location}
                     </option>
                   ))}
                 </select>
@@ -193,9 +225,120 @@ const AssignBranchModal = ({ isOpen, onClose, onSubmit, managerId, loading }) =>
   );
 };
 
+AssignBranchModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func.isRequired,
+  managerId: PropTypes.string,
+  loading: PropTypes.bool.isRequired
+};
+
+AssignBranchModal.defaultProps = {
+  managerId: null
+};
+
+// Manager Card Component for better organization
+const ManagerCard = ({ manager, branchDetails, onEdit, onDelete, onSendVerification, onAssignBranch }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      className="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-all"
+    >
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h3 className="text-xl font-semibold">{manager.Name}</h3>
+          <p className="text-gray-600">{manager.EmployeeID}</p>
+        </div>
+        <div className={`px-2 py-1 rounded-full text-sm ${
+          manager.Verified ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        }`}>
+          {manager.Verified ? (
+            <span className="flex items-center gap-1">
+              <Check size={14} />
+              Verified
+            </span>
+          ) : (
+            <span className="flex items-center gap-1">
+              <AlertCircle size={14} />
+              Unverified
+            </span>
+          )}
+        </div>
+      </div>
+      
+      <div className="space-y-2 text-sm text-gray-600">
+        <p>Email: {manager.Email}</p>
+        <p>Phone: {manager.Phone}</p>
+        {manager.branchId && branchDetails[manager.branchId] && (
+          <div className="mt-2 p-2 bg-blue-50 rounded-lg">
+            <p className="font-medium text-blue-800">Assigned Branch:</p>
+            <p className="text-blue-600">{branchDetails[manager.branchId].Name}</p>
+            <p className="text-blue-600">{branchDetails[manager.branchId].Location}</p>
+          </div>
+        )}
+      </div>
+
+      <div className="flex justify-end space-x-2 mt-4">
+        {!manager.Verified && (
+          <button 
+            onClick={() => onSendVerification(manager._id)}
+            className="text-blue-500 hover:bg-blue-50 p-2 rounded-full"
+            title="Send Verification"
+          >
+            <Send size={18} />
+          </button>
+        )}
+        {manager.Verified && !manager.branchId && (
+          <button 
+            onClick={() => onAssignBranch(manager._id)}
+            className="text-green-500 hover:bg-green-50 p-2 rounded-full"
+            title="Assign Branch"
+          >
+            <PlusCircle size={18} />
+          </button>
+        )}
+        <button 
+          onClick={() => onEdit(manager)}
+          className="text-blue-500 hover:bg-blue-50 p-2 rounded-full"
+          title="Edit Manager"
+        >
+          <Edit2 size={18} />
+        </button>
+        <button 
+          onClick={() => onDelete(manager._id)}
+          className="text-red-500 hover:bg-red-50 p-2 rounded-full"
+          title="Delete Manager"
+        >
+          <Trash2 size={18} />
+        </button>
+      </div>
+    </motion.div>
+  );
+};
+
+ManagerCard.propTypes = {
+  manager: PropTypes.shape({
+    _id: PropTypes.string.isRequired,
+    Name: PropTypes.string.isRequired,
+    EmployeeID: PropTypes.string.isRequired,
+    Email: PropTypes.string.isRequired,
+    Phone: PropTypes.string.isRequired,
+    Verified: PropTypes.bool.isRequired,
+    branchId: PropTypes.string
+  }).isRequired,
+  branchDetails: PropTypes.object.isRequired,
+  onEdit: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired,
+  onSendVerification: PropTypes.func.isRequired,
+  onAssignBranch: PropTypes.func.isRequired
+};
+
 const Employees = () => {
   const { user } = useAuth();
   const [managers, setManagers] = useState([]);
+  const [branchDetails, setBranchDetails] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
@@ -203,19 +346,41 @@ const Employees = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const fetchBranchDetails = async (branchIds) => {
+    try {
+      const details = {};
+      for (const branchId of branchIds) {
+        if (branchId) {
+          const response = await api.get(`/branch/${branchId}`);
+          if (response.data.success) {
+            details[branchId] = response.data.data;
+          }
+        }
+      }
+      setBranchDetails(details);
+    } catch (error) {
+      console.error('Error fetching branch details:', error);
+      toast.error('Failed to fetch branch details');
+    }
+  };
+
   const fetchManagers = async () => {
     try {
       setLoading(true);
       let AdminId = user.userId;
       
-      // Changed to POST since we need to send data in body
       const response = await api.post('/BranchManager/get', { AdminId });
       
       if (response.data.success) {
         setManagers(response.data.BranchManagers);
+        const branchIds = [...new Set(response.data.BranchManagers
+          .map(manager => manager.branchId)
+          .filter(id => id))];
+        await fetchBranchDetails(branchIds);
       }
     } catch (err) {
       setError('Failed to fetch managers');
+      toast.error('Failed to fetch managers');
     } finally {
       setLoading(false);
     }
@@ -223,41 +388,52 @@ const Employees = () => {
 
   useEffect(() => {
     fetchManagers();
-  }, []);
+  }, [user.userId]);
 
   const handleSubmit = async (formData) => {
     try {
       setLoading(true);
       setError('');
       let AdminId = user.userId;
+      
       const handler = editingEmployee
         ? () => api.put('/branchManager/update', { ...formData, BmId: editingEmployee._id })
-        : () => api.post('/branchManager/add', {EmployeeID : formData.EmployeeID , Name :  formData.Name , Email :  formData.Email , Phone :  formData.Phone, AdminId});
+        : () => api.post('/branchManager/add', {
+            EmployeeID: formData.EmployeeID,
+            Name: formData.Name,
+            Email: formData.Email,
+            Phone: formData.Phone,
+            AdminId
+          });
       
       const response = await handler();
       if (response.data.success) {
-        fetchManagers();
+        await fetchManagers();
         handleCloseModal();
+        toast.success(editingEmployee ? 'Manager updated successfully' : 'Manager added successfully');
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Operation failed');
+      toast.error(err.response?.data?.message || 'Operation failed');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Delete this manager?')) {
+    if (window.confirm('Are you sure you want to delete this manager?')) {
       try {
         setLoading(true);
         const response = await api.delete('/branchManager/remove', { 
-          data: { _id: id }  // Changed to match MongoDB's _id field
+          data: { _id: id }
         });
         if (response.data.success) {
-          fetchManagers();
+          await fetchManagers();
+          toast.success('Manager deleted successfully');
         }
       } catch (err) {
         setError('Deletion failed');
+        toast.error('Failed to delete manager');
       } finally {
         setLoading(false);
       }
@@ -269,10 +445,11 @@ const Employees = () => {
       setLoading(true);
       const response = await api.post('/branchManager/sendlink', { id });
       if (response.data.success) {
-        toast.success("Account verification link has been sent")
+        toast.success("Account verification link has been sent");
       }
     } catch (err) {
       setError('Failed to send verification link');
+      toast.error('Failed to send verification link');
     } finally {
       setLoading(false);
     }
@@ -286,11 +463,13 @@ const Employees = () => {
         branchId 
       });
       if (response.data.success) {
-        fetchManagers();
+        await fetchManagers();
         setIsAssignModalOpen(false);
+        toast.success('Branch assigned successfully');
       }
     } catch (err) {
       setError('Failed to assign branch');
+      toast.error('Failed to assign branch');
     } finally {
       setLoading(false);
     }
@@ -301,6 +480,22 @@ const Employees = () => {
     setEditingEmployee(null);
     setError('');
   };
+
+  if (loading && managers.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
+        <div className="flex items-center space-x-2">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          >
+            <Loader2 className="w-6 h-6 text-blue-600" />
+          </motion.div>
+          <span className="text-gray-600">Loading managers...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -326,84 +521,33 @@ const Employees = () => {
           </div>
         )}
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <AnimatePresence>
-            {managers.map((manager) => (
-              <motion.div
-                key={manager._id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-all"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-xl font-semibold">{manager.Name}</h3>
-                    <p className="text-gray-600">{manager.EmployeeID}</p>
-                  </div>
-                  <div className={`px-2 py-1 rounded-full text-sm ${
-                    manager.Verified ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {manager.Verified ? (
-                      <span className="flex items-center gap-1">
-                        <Check size={14} />
-                        Verified
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1">
-                        <AlertCircle size={14} />
-                        Unverified
-                      </span>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="space-y-2 text-sm text-gray-600">
-                  <p>Email: {manager.Email}</p>
-                  <p>Phone: {manager.Phone}</p>
-                  {manager.branchId && <p>Branch Assigned: Yes</p>}
-                </div>
-
-                <div className="flex justify-end space-x-2 mt-4">
-                  {!manager.Verified && (
-                    <button 
-                      onClick={() => handleSendVerification(manager._id)}
-                      className="text-blue-500 hover:bg-blue-50 p-2 rounded-full"
-                    >
-                      <Send size={18} />
-                    </button>
-                  )}
-                  {manager.Verified && !manager.branchId && (
-                    <button 
-                      onClick={() => {
-                        setSelectedManagerId(manager._id);
-                        setIsAssignModalOpen(true);
-                      }}
-                      className="text-green-500 hover:bg-green-50 p-2 rounded-full"
-                    >
-                      <PlusCircle size={18} />
-                    </button>
-                  )}
-                  <button 
-                    onClick={() => {
-                      setEditingEmployee(manager);
-                      setIsModalOpen(true);
-                    }}
-                    className="text-blue-500 hover:bg-blue-50 p-2 rounded-full"
-                  >
-                    <Edit2 size={18} />
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(manager._id)}
-                    className="text-red-500 hover:bg-red-50 p-2 rounded-full"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
+        {managers.length === 0 && !loading ? (
+          <div className="text-center py-12">
+            <p className="text-gray-600">No branch managers found. Add one to get started!</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <AnimatePresence>
+              {managers.map((manager) => (
+                <ManagerCard
+                  key={manager._id}
+                  manager={manager}
+                  branchDetails={branchDetails}
+                  onEdit={(manager) => {
+                    setEditingEmployee(manager);
+                    setIsModalOpen(true);
+                  }}
+                  onDelete={handleDelete}
+                  onSendVerification={handleSendVerification}
+                  onAssignBranch={(managerId) => {
+                    setSelectedManagerId(managerId);
+                    setIsAssignModalOpen(true);
+                  }}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
 
         <EmployeeModal
           isOpen={isModalOpen}
@@ -423,6 +567,13 @@ const Employees = () => {
       </motion.div>
     </div>
   );
+};
+
+// Add prop types for the Auth Context
+useAuth.propTypes = {
+  user: PropTypes.shape({
+    userId: PropTypes.string.isRequired,
+  }).isRequired,
 };
 
 export default Employees;

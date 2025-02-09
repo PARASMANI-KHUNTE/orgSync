@@ -8,10 +8,20 @@ const {
     updateBranchManager,
     assignBranch,
     sendVerificationLink,
-    setPassword
-} = require('../Controllers/BranchManagerController')
-router.use(authMiddleware)
+    setPassword,
+    login,
+    updatePassword
 
+} = require('../Controllers/BranchManagerController')
+
+
+
+router.post('/Login',login),
+
+
+
+router.use(authMiddleware)
+router.post('/update-password',updatePassword);
 router.post('/get',getBranchManagers);
 router.post('/add',addBranchManager);
 router.delete('/remove',removeBranchManager);
