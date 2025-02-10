@@ -8,7 +8,8 @@ const {sendOTP} = require('../Utils/OtpService')
 
 exports.checkEmployeeFace = async (req, res) => {
     try {
-        const { embedding, id } = req.body;
+        const { embedding } = req.body;
+        const id = req.user.payload?.userBranchId;
       
 
         // Validate employer ID
@@ -29,17 +30,17 @@ exports.checkEmployeeFace = async (req, res) => {
                 throw new Error("Invalid embedding format.");
             }
         } catch (err) {
-            return res.status(400).json({ message: "Invalid embedding format. Expected an array of numbers." });
+            return res.status(400).json({ success : false ,message: "Invalid embedding format. Expected an array of numbers." });
         }
 
         // Ensure parsed embedding contains only valid numbers
         if (!parsedEmbedding.every(num => typeof num === "number" && !isNaN(num))) {
-            return res.status(400).json({ message: "Embedding array contains invalid values." });
+            return res.status(400).json({ success : false , message: "Embedding array contains invalid values." });
         }
 
       
         // Fetch all employees under the given employer
-        let employees = await Employee.find({ employer: id });
+        let employees = await Employee.find({ BranchId: id });
 
         if (!employees.length) {
             return res.status(400).json({
@@ -67,7 +68,7 @@ exports.checkEmployeeFace = async (req, res) => {
 
     } catch (error) {
         console.error("Error in face recognition:", error);
-        res.status(500).json({ message: "Internal server error" });
+        res.status(500).json({success : false, message: "Internal server error" });
     }
 };
 exports.CheckForExistenceData = async (req, res) => {
@@ -134,7 +135,6 @@ exports.SaveSignupData = async (req, res) => {
             },
             FaceEmbeddings,  // Added FaceEmbeddings
             Password: hashedPassword,
-            isVerified: true, // Make sure your schema has this field if you're using it
         });
 
         // Save to database
@@ -176,7 +176,7 @@ exports.login = async (req,res) =>{
             userId : user.id,
             userName : user.Name,
             userEmail : user.Email,
-            userPhone : user.Phone
+            userPhone : user.Phone,
         }
 
 
@@ -238,8 +238,10 @@ exports.updatePassword = async (req, res) => {
 exports.employeeCheckin = async (req,res)=>{
 
     try {
-        const { embedding, id } = req.body;
+        const { embedding } = req.body;
       
+
+        const id = req.user.payload?.userId;
 
         // Validate employer ID
         if (!id) {

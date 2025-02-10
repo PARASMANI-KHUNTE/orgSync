@@ -45,6 +45,9 @@ const DepartmentRoute = require('./Routes/Department')
 app.use("/api/departments",DepartmentRoute)
 
 
+const EmployeeRoute = require('./Routes/Employee')
+app.use('/api/employee',EmployeeRoute)
+
 app.listen(port,()=>{
     console.log(`Server is up on http://localhost:${port}`)
 })

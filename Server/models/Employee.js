@@ -7,7 +7,7 @@ const EmployeeSchema = new mongoose.Schema({
         unique: true
     },
     FaceEmbeddings: {
-        type: [[Number]], // Array of arrays of numbers
+        type: [[Number]], 
         required: true,
         validate: {
             validator: function(arr) {
@@ -18,7 +18,7 @@ const EmployeeSchema = new mongoose.Schema({
             message: "Embeddings must be a 2D array of valid numbers."
         }
     },
-    Attendance: {  // Fixed spelling from "Attendence" to "Attendance"
+    Attendance: {  
         type: mongoose.Schema.Types.ObjectId,
         ref: "Attendance"
     },
@@ -37,7 +37,7 @@ const EmployeeSchema = new mongoose.Schema({
         unique: true,
         match: [/^[6-9]\d{9}$/, "Please enter a valid 10-digit phone number"] // Ensures it's a valid Indian phone number
     },
-    Address: { // Fixed incorrect object definition
+    Address: { 
         city: { type: String, required: true },
         state: { type: String, required: true },
         pincode: { type: Number, required: true }
@@ -45,6 +45,14 @@ const EmployeeSchema = new mongoose.Schema({
     Password: {
         type: String,
         required: true
+    },
+    assignedDepartment : {
+        type : mongoose.Schema.Types.ObjectId,
+        ref : "Department"
+    },
+    BranchId  : {
+        type : mongoose.Schema.Types.ObjectId,
+        ref : "Branch"
     }
 });
 

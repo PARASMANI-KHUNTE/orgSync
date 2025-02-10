@@ -10,12 +10,12 @@ const {
      updatePassword,
      resetPassword,
      setNewPassword}
-     = require('../Controllers/EmployeeController')
+     = require('../Controllers/EmployeeController');
+const { authMiddleware } = require('../middlewares/authMiddleware');
 
-
+router.use(authMiddleware)
 router.get('/checkFace',checkEmployeeFace)
 router.get("/checkdata",CheckForExistenceData)
-
 router.post('/Signup',SaveSignupData),
 router.post('/Login',login),
 router.post('/update-password',updatePassword);

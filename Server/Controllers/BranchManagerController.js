@@ -4,6 +4,7 @@ const argon2 = require('argon2')
 const {generateToken} = require('../Utils/TokenService')
 const jwt = require('jsonwebtoken');
 const {sendLink,sendOTP} = require('../Utils/OtpService')
+const faceapi = require("face-api.js");
 
 exports.getBranchManagers = async(req,res)=>{
     try {
@@ -356,9 +357,6 @@ exports.updatePassword = async (req, res) => {
         });
     }
 };
-
-
-
 exports.resetPassword = async (req,res) =>{
     const { email } = req.body;
 
@@ -395,8 +393,6 @@ exports.resetPassword = async (req,res) =>{
         });
     }
 }
-
-
 exports.setNewPassword = async (req,res) =>{
     const { email, password } = req.body;
 
@@ -436,3 +432,7 @@ exports.setNewPassword = async (req,res) =>{
         });
     }
 }
+
+
+
+

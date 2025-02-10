@@ -51,3 +51,10 @@ exports.OtpVerify =  async (req,res)=>{
 }
 
 
+
+exports.checkToken = async(req,res) =>{
+    res.status(200).json({
+        success : true,
+    })
+}
+

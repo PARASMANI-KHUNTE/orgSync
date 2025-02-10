@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import {  FaUser } from "react-icons/fa";
 import { RiDashboardFill, RiBuilding2Fill, RiOrganizationChart, RiUser3Fill, RiSettings3Fill, RiLogoutBoxFill, RiMenu3Fill } from "react-icons/ri";
 import Dashboard from "./ManagerSidebar/Dashboard"
-import Employees from "./ManagerSidebar/Employee";
 import EmployeeList from './ManagerSidebar/EmployeeList'
 import Attendence from './ManagerSidebar/Attendance'
 import Profile from "./SideBarPages/Profile";
@@ -12,6 +11,7 @@ import Settings from "./SideBarPages/Settings";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import Departments from "./ManagerSidebar/Departments";
+import Employee from "./ManagerSidebar/Employee";
 const ManagerDashBoard = () => {
     const navigate = useNavigate();
     const { logout } = useAuth();
@@ -23,7 +23,8 @@ const ManagerDashBoard = () => {
     { name: "Attendence", icon: <RiBuilding2Fill /> },
     { name: "Department", icon: <RiOrganizationChart /> },
     { name: "Report", icon: <RiOrganizationChart /> },
-    { name: "Employees", icon: <RiUser3Fill /> },
+    { name: "Add Employee", icon: <RiUser3Fill /> },
+    { name: "EmployeeList", icon: <RiUser3Fill /> },
     { name: "Profile", icon: <FaUser /> },
     { name: "Settings", icon: <RiSettings3Fill /> },
   ];
@@ -76,7 +77,7 @@ const ManagerDashBoard = () => {
         {activeComponent === "Dashboard" && <Dashboard />}
         {activeComponent === "Attendence" && <Attendence />}
         {activeComponent === "Department" && <Departments />}
-        {activeComponent === "Employee" && <Employees />}
+        {activeComponent === "Add Employee" && <Employee />}
         {activeComponent === "EmployeeList" && <EmployeeList />}
         {activeComponent === "Report" && <Report />}
         {activeComponent === "Profile" && <Profile />}
