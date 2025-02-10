@@ -1,5 +1,4 @@
 // server/src/middleware/authMiddleware.js
-const jwt = require('jsonwebtoken');
 const {tokenVerify} = require('../Utils/TokenService')
 const authMiddleware = (req, res, next) => {
   const token = req.headers['authorization']?.split(' ')[1];
@@ -7,6 +6,14 @@ const authMiddleware = (req, res, next) => {
 
   try {
     const verified = tokenVerify(token);
+    console.log(verified)
+    if(!verified.isValid){
+      return res.status(404).json({
+        success : false,
+        message : "invalid user"
+      })
+    }
+    
     req.user = verified;
     next();
   } catch (err) {

@@ -23,17 +23,10 @@ const tokenVerify = (token) => {
   }
 
   try {
-    // Verify the token and decode its payload
     const payload = jsonwebtoken.verify(token, process.env.JWT_SECRET);
-
-    // Extract user information or any other payload details
-    const user = payload.user || null; // Assuming "user" is a property in the payload
-
-    // Return both user, payload, and verification status (true for valid token)
-    return { user, payload, isValid: true };
+    return {  payload, isValid: true };
   } catch (err) {
-    // If the token is invalid, return false for isValid and null for user & payload
-    return { user: null, payload: null, isValid: false };
+    return { payload: null, isValid: false };
   }
 };
 module.exports = { generateToken, tokenVerify ,generateTokenForPassword};

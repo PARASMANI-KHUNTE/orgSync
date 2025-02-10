@@ -8,12 +8,11 @@ const DepartmentSchema = new mongoose.Schema({
     },
     Task: {
         type: [String],
-        required: true
     },
-    AssignedEmployees: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Employee"
-    }]
+    branchId : {
+            type : mongoose.Schema.Types.ObjectId,
+            ref : "Branch"
+        }
 }, { timestamps: true });
 
 module.exports = mongoose.model("Department", DepartmentSchema);

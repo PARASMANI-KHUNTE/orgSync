@@ -72,6 +72,7 @@ const LoginForm = () => {
 
   // Handle forgot password
   const handleForgotPassword = () => {
+    navigate('/reset-password')
     toast.info("Redirecting to forgot password page...");
     // Redirect to forgot password page
   };

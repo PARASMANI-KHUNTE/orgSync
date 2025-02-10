@@ -10,15 +10,17 @@ const {
     sendVerificationLink,
     setPassword,
     login,
-    updatePassword
+    updatePassword,
+    resetPassword,
+    setNewPassword
 
 } = require('../Controllers/BranchManagerController')
 
 
 
 router.post('/Login',login),
-
-
+router.post('/reset-password',resetPassword)
+router.put('/updatePassword',setNewPassword)
 
 router.use(authMiddleware)
 router.post('/update-password',updatePassword);

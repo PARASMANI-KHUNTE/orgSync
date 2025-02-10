@@ -2,6 +2,8 @@ const BranchManager = require('../models/BranchManager')
 const Organization = require('../models/Organization')
 const argon2 = require('argon2')
 const {generateToken} = require('../Utils/TokenService')
+const jwt = require('jsonwebtoken');
+const {sendLink,sendOTP} = require('../Utils/OtpService')
 
 exports.getBranchManagers = async(req,res)=>{
     try {
@@ -193,13 +195,6 @@ exports.assignBranch = async(req,res)=>{
         
     }
 }
-
-
-
-// Backend: BranchManagerController.js
-const jwt = require('jsonwebtoken');
-const {sendLink} = require('../Utils/OtpService')
-
 exports.sendVerificationLink = async (req, res) => {
   try {
     const { id } = req.body;
@@ -243,7 +238,6 @@ exports.sendVerificationLink = async (req, res) => {
     });
   }
 };
-
 exports.setPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
@@ -284,10 +278,6 @@ exports.setPassword = async (req, res) => {
     });
   }
 };
-
-
-
-
 exports.login = async (req,res) =>{
     try{
         const {Email , Password} = req.body;
@@ -310,6 +300,7 @@ exports.login = async (req,res) =>{
             userName : user.Name,
             userEmail : user.Email,
             userPhone : user.Phone,
+            userbranchId : user.branchId
         }
 
 
@@ -366,3 +357,82 @@ exports.updatePassword = async (req, res) => {
     }
 };
 
+
+
+exports.resetPassword = async (req,res) =>{
+    const { email } = req.body;
+
+    // Validate email input
+    if (!email) {
+        return res.status(400).json({
+            success : false,
+            message: "Please Provide Email"
+        });
+    }
+
+    try {
+        // Check if user exists in the database
+        const isUser = await BranchManager.findOne({ Email : email }); // Await the database call
+        if (!isUser) {
+            return res.status(404).json({
+                success : false,
+                message: "User Does not exist"
+            });
+        }
+   
+        await sendOTP(email);
+
+        // Respond with success message and token
+        return res.status(200).json({
+            success : true,
+            message: `OTP sent successfully to ${email}`,
+        });
+    } catch (error) {
+        // console.error("Error in forgot-password route:", error.message);
+        return res.status(500).json({
+            success : false,
+            message: "Internal Server Error"
+        });
+    }
+}
+
+
+exports.setNewPassword = async (req,res) =>{
+    const { email, password } = req.body;
+
+    // Validate the input
+    if (!email || !password) {
+        return res.status(400).json({
+            success : false,
+            message: "userId and password are required",
+        });
+    }
+
+    try {
+        const hashedPassword = await argon2.hash(password);
+      
+        // Find the user by ID and update the password
+        const user = await BranchManager.findOneAndUpdate(
+            {Email : email},
+            { Password: hashedPassword },
+            { new: true } // Return the updated document
+        );
+
+        if (!user) {
+            return res.status(404).json({
+                success : false,
+                message: "User not found",
+            });
+        }
+
+        return res.status(200).json({
+            success : true,
+            message: "Password updated successfully",
+        });
+    } catch (error) {
+        // console.error("Error updating password:", error.message);
+        return res.status(500).json({
+            message: "Internal server error",
+        });
+    }
+}

@@ -2,7 +2,7 @@ const argon2 = require('argon2')
 const Employee = require('../models/Employee')
 
 const {generateToken} = require('../Utils/TokenService')
-
+const {sendOTP} = require('../Utils/OtpService')
 
 
 
@@ -336,5 +336,80 @@ for (let employee of employees) {
     
 }
 
+exports.resetPassword = async (req,res) =>{
+    const { email } = req.body;
 
+    // Validate email input
+    if (!email) {
+        return res.status(400).json({
+            success : false,
+            message: "Please Provide Email"
+        });
+    }
 
+    try {
+        // Check if user exists in the database
+        const isUser = await Employee.findOne({ email }); // Await the database call
+        if (!isUser) {
+            return res.status(404).json({
+                success : false,
+                message: "User Does not exist"
+            });
+        }
+   
+        await sendOTP(email);
+
+        // Respond with success message and token
+        return res.status(200).json({
+            success : true,
+            message: `OTP sent successfully to ${email}`,
+        });
+    } catch (error) {
+        // console.error("Error in forgot-password route:", error.message);
+        return res.status(500).json({
+            success : false,
+            message: "Internal Server Error"
+        });
+    }
+}
+
+exports.setNewPassword = async (req,res) =>{
+    const { email, password } = req.body;
+
+    // Validate the input
+    if (!email || !password) {
+        return res.status(400).json({
+            success : false,
+            message: "userId and password are required",
+        });
+    }
+
+    try {
+        const hashedPassword = await argon2.hash(password);
+      
+        // Find the user by ID and update the password
+        const user = await Employee.findOneAndUpdate(
+            {Email : email},
+            { Password: hashedPassword },
+            { new: true } // Return the updated document
+        );
+
+        if (!user) {
+            return res.status(404).json({
+                success : false,
+                message: "User not found",
+            });
+        }
+
+        return res.status(200).json({
+            success : true,
+            message: "Password updated successfully",
+        });
+    } catch (error) {
+        // console.error("Error updating password:", error.message);
+        return res.status(500).json({
+            success : false,
+            message: "Internal server error",
+        });
+    }
+}

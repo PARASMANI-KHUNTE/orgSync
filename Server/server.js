@@ -41,7 +41,8 @@ app.use('/api/branch',BranchRoute)
 const BranchManagerRoute = require('./Routes/BranchManager')
 app.use('/api/BranchManager',BranchManagerRoute)
 
-
+const DepartmentRoute = require('./Routes/Department')
+app.use("/api/departments",DepartmentRoute)
 
 
 app.listen(port,()=>{

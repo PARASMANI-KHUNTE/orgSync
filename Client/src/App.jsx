@@ -8,6 +8,9 @@ import SetPassword from './Components/SetPassword'
 import ManagerDashBoard from './Pages/ManagerDashBoard'
 import LoginForm from './Pages/Auth/LoginForm'
 import EmployeeDashboard from './Pages/EmployeeDashboard'
+import ResetPassword from './Pages/Auth/ResetPassword'
+import VerifyOtp from './Pages/Auth/VerifyOtp'
+import UpdatePassword from './Pages/Auth/UpdatePassword'
 
 const App = () => {
   return (
@@ -23,6 +26,9 @@ const App = () => {
         <Route path='/manager-dashboard' element={<ManagerDashBoard />}/>
         <Route path='/employee-dashboard' element={<EmployeeDashboard />}/>
         <Route path="/set-password/:token" element={<SetPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/verify-otp" element={<VerifyOtp />} />
+        <Route path="/update-password" element={<UpdatePassword />} />
 
       </Routes>
     </Router>

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import  { useRef, useEffect } from "react";
 import * as faceapi from "face-api.js";
 
 const FaceRecognition = ({ onFaceCapture }) => {
