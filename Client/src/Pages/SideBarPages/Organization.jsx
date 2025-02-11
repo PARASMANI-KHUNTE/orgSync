@@ -118,7 +118,7 @@ const Organization = () => {
 
   const handleCreate = async (formData) => {
     try {
-      const response = await api.post("/org/createOrg", formData);
+      const response = await api.post("/org/createOrg",{Name : formData.Name ,Location : formData.Location} );
       if (response.data.success) {
         toast.success("Organization created successfully!");
         await fetchOrganization();
