@@ -30,7 +30,7 @@ const LoginForm = () => {
           endpoint = "/BranchManager/Login";
           break;
         case "employee":
-          endpoint = "/superAdmin/login";
+          endpoint = "/Employee/login";
           break;
         default:
           throw new Error("Invalid role");

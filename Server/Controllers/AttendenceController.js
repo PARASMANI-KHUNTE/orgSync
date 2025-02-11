@@ -269,3 +269,23 @@ exports.getAttendance = async (req, res) => {
     }
 };
 
+exports.getAttendanceById = async (req, res) => {
+     
+    const id = req.user.payload?.userId;
+
+    if (!id) {
+        return res.status(400).json({ success: false, message: "Employee ID is required" });
+    }
+
+    const ValidateEmployee = await Employee.findById(id);
+    if (!ValidateEmployee) {
+        return res.status(400).json({ success: false, message: "Invalid Employee" });
+    }
+
+    const AttendanceRecord = await Attendance.findOne({ Employee: id });
+    if (AttendanceRecord) {
+        return res.status(200).json({ success: true, AttendanceRecord });
+    } else {
+        return res.status(404).json({ success: false, message: "No attendance record found" });
+    }
+};
