@@ -9,16 +9,19 @@ const {
      login,
      updatePassword,
      resetPassword,
-     setNewPassword}
+     setNewPassword,
+     getEmployees,
+     assignWork}
      = require('../Controllers/EmployeeController');
 const { authMiddleware } = require('../middlewares/authMiddleware');
-
+router.post('/Login',login),
 router.use(authMiddleware)
 router.post('/checkFace',checkEmployeeFace)
 router.get("/checkdata",CheckForExistenceData)
 router.post('/Signup',SaveSignupData),
-router.post('/Login',login),
 router.post('/update-password',updatePassword);
 router.post('/reset-password',resetPassword)
 router.put('/updatePassword',setNewPassword)
+router.get('/getEmployees',getEmployees)
+router.post('/assignDepartment',assignWork)
 module.exports = router;

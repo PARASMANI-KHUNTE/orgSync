@@ -441,36 +441,32 @@ exports.setNewPassword = async (req,res) =>{
 
 exports.assignWork = async (req, res) => {
     try {
-        const { formSData, employeeId } = req.body;
-        
-        // Find the employee by ID
-        const employee = await Employee.findById(employeeId);
-        if (!employee) {
-            return res.status(400).json({ message: "No employee found" });
+        const { employeeId, departmentId } = req.body;
+
+        if (!employeeId || !departmentId) {
+            return res.status(400).json({ success: false, message: "Employee ID and Department ID are required." });
         }
 
-        // Update only the specific employee
-        await Employee.updateOne(
-            { _id: employeeId }, 
-            { $set: { shift: formSData.shift, department: formSData.department, tasks: formSData.task } }
-        );
+        const employee = await Employee.findById(employeeId);
+        if (!employee) {
+            return res.status(404).json({ success: false, message: "Employee not found." });
+        }
 
-        return res.status(200).json({
-            success : true ,
-            message: "Successfully registered employee and assigned work",
-        });
+        employee.assignedDepartment = departmentId;
+        await employee.save();
 
+        res.status(200).json({ success: true, message: "Department assigned successfully." });
     } catch (error) {
-       
-        console.error("Error assigning work:", error);
-        return res.status(500).json({ message: "Error assigning work" , success : false  });
+        console.error("Error assigning department:", error);
+        res.status(500).json({ success: false, message: "Internal server error." });
     }
-};
+}
 
 exports.getEmployees = async (req,res) =>{
-    const {id} = req.body;
+    const branchId = req.user.payload?.userbranchId
 
-    const employees = await Employee.findOne({employer : id})
+    const employees = await Employee.find({ BranchId: branchId }).select("-FaceEmbeddings -Password");
+
     if(!employees){
         return res.status(200).json({
             message : "No Employees Found"
