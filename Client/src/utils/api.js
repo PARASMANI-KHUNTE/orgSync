@@ -2,7 +2,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 
 const api = axios.create({
-  baseURL: "http://localhost:3000/api",
+  baseURL: "https://orgsync-opby.onrender.com/api",
   headers: {
     'Content-Type': 'application/json',
   },

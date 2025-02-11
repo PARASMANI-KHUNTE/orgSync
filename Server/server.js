@@ -3,7 +3,9 @@ const app = express();
 const dotenv = require('dotenv');
 dotenv.config();
 const cors = require('cors');
-app.use(cors());
+app.use(cors({
+    origin : "https://orgsync.onrender.com"
+}));
 app.use(express.json());
 const bodyParser = require('body-parser');
 app.use(bodyParser.json());
