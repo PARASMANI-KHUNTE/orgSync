@@ -1,72 +1,48 @@
-// import { useNavigate } from "react-router-dom";
-import  { useRef, useEffect, useState } from "react";
-import * as faceapi from "face-api.js";
-import { toast } from 'react-toastify';
-import api from "../../utils/api";
-import * as tf from '@tensorflow/tfjs';
+import { useState } from "react";
+import { toast } from "react-toastify";
 import FaceDetection from "../../Components/FaceDetection";
-const Employee= () => {
-  const [currentStep, setCurrentStep] = useState(1);
-  const handleNext = () => {
+import RegistrationForm from "../../Components/RegistrationForm";
 
-    setCurrentStep((prevStep) => prevStep + 1);
+const Employee = () => {
+  const [faceDetect, setFaceDetect] = useState(false);
+  const [form, setForm] = useState(false);
+  const [embeddings, setEmbeddings] = useState(null);
+
+  const handleAddEmployee = () => {
+    setFaceDetect(true); // Show FaceDetection component
+    setForm(false); // Hide RegistrationForm
+    setEmbeddings(null); // Reset embeddings
   };
-  const [newEmployee,setNewEmployee] = useState(null)
-  const handelAddEmployee = async ()=>{
-    if(newEmployee){
-      setNewEmployee(false)
-    }else{
-      setNewEmployee(true)
+
+
+  const handleFaceDetected = (embeddingData) => {
+    if (embeddingData) {
+      setEmbeddings(embeddingData);
+      setFaceDetect(false); // Hide FaceDetection
+      setForm(true); // Show RegistrationForm
+      toast.success("Face detected successfully! Proceeding to registration.");
+    } else {
+      toast.error("Face detection failed. Please try again.");
     }
-    
-  }
-   
-  
-    const sendEmbeddingToBackend = async (embedding) => {
-        try {
-          console.log("trying to send data",embedding)
-          const response = await api.post("/employee/checkFace", { embedding 
-          });
-          console.log("Face embedding sent successfully:", response.data);
-         if (response.data.success == true){
-            handleNext()
-            setCapturedImage(null)
-            toast.success(response.data.message)
-          }else{
-            toast.error(`Face Already Exist`)
-            setCapturedImage(null)
-          }
-           // Store employeeId
-        } catch (error) {
-          console.error("Error sending embedding:", error);
-        }
-      };
-  
+  };
 
   return (
- <>
-   <div className="flex flex-col gap-2  p-6 rounded-lg shadow-lg">
-   <div className="bg-white p-6 rounded-lg shadow-lg">
-      <nav className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold text-gray-800">Add Employee </h2>
-        <button 
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-all"
-          onClick={handelAddEmployee}
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2 items-start bg-gray-200 p-2">
+        <h1>Hello Branch Manager.</h1>
+        <h1>Add an Employee to your Branch from here.</h1>
+        <button
+          onClick={handleAddEmployee}
+          className="bg-violet-950 rounded p-2 text-white"
         >
-          Add Employee
+          Add New Employee
         </button>
-      </nav>
-      <p className="text-gray-600">Manage your employees here.</p>
-    </div>
-  { newEmployee && 
-     <FaceDetection />
-  }
+      </div>
 
-   </div>
-    
- </>
+      {faceDetect && <FaceDetection setEmbeddings={handleFaceDetected} />}
+      {form && <RegistrationForm embeddings={embeddings} setForm={setForm} />}
+    </div>
   );
 };
 
 export default Employee;
-

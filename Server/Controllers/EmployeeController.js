@@ -1,6 +1,6 @@
 const argon2 = require('argon2')
 const Employee = require('../models/Employee')
-
+const faceapi = require('face-api.js')
 const {generateToken} = require('../Utils/TokenService')
 const {sendOTP} = require('../Utils/OtpService')
 
@@ -9,8 +9,8 @@ const {sendOTP} = require('../Utils/OtpService')
 exports.checkEmployeeFace = async (req, res) => {
     try {
         const { embedding } = req.body;
-        const id = req.user.payload?.userBranchId;
-      
+        const id = req.user.payload?.userId;
+        const branchId = req.user.payload?.userbranchId;
 
         // Validate employer ID
         if (!id) {
@@ -25,55 +25,62 @@ exports.checkEmployeeFace = async (req, res) => {
             } else if (embedding instanceof Float32Array) {
                 parsedEmbedding = Array.from(embedding);
             } else if (typeof embedding === "object" && embedding !== null) {
-                parsedEmbedding = Object.keys(embedding).map(key => Number(embedding[key]));
+                parsedEmbedding = Object.values(embedding).map(Number);
             } else {
                 throw new Error("Invalid embedding format.");
             }
         } catch (err) {
-            return res.status(400).json({ success : false ,message: "Invalid embedding format. Expected an array of numbers." });
+            return res.status(400).json({ message: "Invalid embedding format. Expected an array of numbers." });
         }
 
-        // Ensure parsed embedding contains only valid numbers
-        if (!parsedEmbedding.every(num => typeof num === "number" && !isNaN(num))) {
-            return res.status(400).json({ success : false , message: "Embedding array contains invalid values." });
+        // Ensure parsed embedding is a valid array of 128 numbers
+        if (!Array.isArray(parsedEmbedding) || parsedEmbedding.length !== 128 || !parsedEmbedding.every(num => typeof num === "number" && !isNaN(num))) {
+            return res.status(400).json({ success: false, message: "Invalid embedding data. Expected an array of 128 numbers." });
         }
 
-      
-        // Fetch all employees under the given employer
-        let employees = await Employee.find({ BranchId: id });
+        // Fetch all employees under the given branch
+        let employees = await Employee.find({ BranchId: branchId });
 
-        if (!employees.length) {
-            return res.status(400).json({
-                status : false,
-                message : "No face matched."
-            })
+        if (!employees || employees.length === 0) {
+            return res.status(200).json({
+                success: false,
+                message: "Face does not exist"
+            });
         }
 
-        // Check if embedding already exists in any employee
+        // Compare parsed embedding with stored 2D FaceEmbeddings array
         for (let employee of employees) {
-            if (!employee.embeddings || employee.embeddings.length === 0) continue;
+            if (!employee.FaceEmbeddings || employee.FaceEmbeddings.length === 0) continue;
 
-            for (let storedEmbedding of employee.embeddings) {
+            for (let storedEmbedding of employee.FaceEmbeddings) {  // Loop through stored 2D embeddings
+                if (!Array.isArray(storedEmbedding) || storedEmbedding.length !== 128) continue; // Ensure stored embedding is valid
+
                 const distance = faceapi.euclideanDistance(parsedEmbedding, storedEmbedding);
 
                 if (distance < 0.5) {  // Threshold for similarity
                     return res.status(200).json({
                         message: "Face already exists",
-                        success : true,
-                        employeeId: employee._id
+                        success: true,
                     });
                 }
             }
         }
 
+        return res.status(200).json({
+            success: false,
+            message: "No matching face found"
+        });
+
     } catch (error) {
         console.error("Error in face recognition:", error);
-        res.status(500).json({success : false, message: "Internal server error" });
+        res.status(500).json({ message: "Internal server error" });
     }
 };
+
 exports.CheckForExistenceData = async (req, res) => {
     try {
-        const {EmployeeID , Name, Email, Phone } = req.body;
+        const { EmployeeID, Name, Email, Phone } = req.query;
+
 
         if (!EmployeeID || !Name || !Email || !Phone ) {
             return res.status(400).json({
@@ -106,16 +113,34 @@ exports.CheckForExistenceData = async (req, res) => {
         });
     }
 }
-
 exports.SaveSignupData = async (req, res) => {
     try {
-        const { EmployeeID, Name, Email, Phone, Password, Address, FaceEmbeddings } = req.body;
+        let { EmployeeID, Name, Email, Phone, Password, Address, FaceEmbeddings } = req.body;
 
-        // Validate required fields
-        if (!EmployeeID || !Name || !Email || !Phone || !Password || !Address || !FaceEmbeddings) {
+        const branchId = req.user.payload?.userbranchId;
+
+        // If FaceEmbeddings is a string (e.g., JSON.stringify output), parse it
+        if (typeof FaceEmbeddings === "string") {
+            try {
+                FaceEmbeddings = JSON.parse(FaceEmbeddings);
+            } catch (error) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid FaceEmbeddings format.",
+                });
+            }
+        }
+
+        // Convert keys in FaceEmbeddings object to an array if needed
+        if (FaceEmbeddings && typeof FaceEmbeddings === "object" && !Array.isArray(FaceEmbeddings)) {
+            FaceEmbeddings = Object.values(FaceEmbeddings).map(num => parseFloat(num));
+        }
+
+        // Ensure FaceEmbeddings is a valid array of 128 numbers
+        if (!Array.isArray(FaceEmbeddings) || FaceEmbeddings.length !== 128 || FaceEmbeddings.some(isNaN)) {
             return res.status(400).json({
                 success: false,
-                message: "Missing Fields",
+                message: "FaceEmbeddings must be an array of 128 valid numbers.",
             });
         }
 
@@ -133,8 +158,9 @@ exports.SaveSignupData = async (req, res) => {
                 state: Address.state,
                 pincode: Address.pincode
             },
-            FaceEmbeddings,  // Added FaceEmbeddings
+            FaceEmbeddings,  // Now properly formatted as an array of numbers
             Password: hashedPassword,
+            BranchId: branchId
         });
 
         // Save to database
@@ -232,9 +258,6 @@ exports.updatePassword = async (req, res) => {
         });
     }
 };
-
-
-
 exports.employeeCheckin = async (req,res)=>{
 
     try {
@@ -337,7 +360,6 @@ for (let employee of employees) {
 
     
 }
-
 exports.resetPassword = async (req,res) =>{
     const { email } = req.body;
 
@@ -415,3 +437,75 @@ exports.setNewPassword = async (req,res) =>{
         });
     }
 }
+
+
+exports.assignWork = async (req, res) => {
+    try {
+        const { formSData, employeeId } = req.body;
+        
+        // Find the employee by ID
+        const employee = await Employee.findById(employeeId);
+        if (!employee) {
+            return res.status(400).json({ message: "No employee found" });
+        }
+
+        // Update only the specific employee
+        await Employee.updateOne(
+            { _id: employeeId }, 
+            { $set: { shift: formSData.shift, department: formSData.department, tasks: formSData.task } }
+        );
+
+        return res.status(200).json({
+            success : true ,
+            message: "Successfully registered employee and assigned work",
+        });
+
+    } catch (error) {
+       
+        console.error("Error assigning work:", error);
+        return res.status(500).json({ message: "Error assigning work" , success : false  });
+    }
+};
+
+exports.getEmployees = async (req,res) =>{
+    const {id} = req.body;
+
+    const employees = await Employee.findOne({employer : id})
+    if(!employees){
+        return res.status(200).json({
+            message : "No Employees Found"
+        })
+    }
+    
+    
+    return res.status(200).json({
+        success : true,
+        employees,
+        message : "Succesfully got the data"
+    })
+
+
+};
+exports.getEmployee = async (req,res) =>{
+    const {id , employeeId} = req.body;
+
+    const employees = await Employee.findOne({employer : id})
+    if(!employees){
+        return res.status(200).json({
+            message : "No Employees Found"
+        })
+    }
+    // let userdata =[]
+    // let noOfemployees = employees.length()
+    // for(i;i>=noOfemployees,i++){
+    //     const employee = await User.findOne({employeeId})
+    //     if(employee)
+    // }
+    return res.status(200).json({
+        success : true,
+        employees,
+        message : "Succesfully got the data"
+    })
+
+
+};

@@ -7,17 +7,12 @@ const EmployeeSchema = new mongoose.Schema({
         unique: true
     },
     FaceEmbeddings: {
-        type: [[Number]], 
+        type:[[Number]],  // 2D array of 128 numbers
         required: true,
-        validate: {
-            validator: function(arr) {
-                return arr.every(innerArr => 
-                    Array.isArray(innerArr) && innerArr.every(num => typeof num === 'number' && !isNaN(num))
-                );
-            },
-            message: "Embeddings must be a 2D array of valid numbers."
-        }
-    },
+    
+    }
+    
+    ,
     Attendance: {  
         type: mongoose.Schema.Types.ObjectId,
         ref: "Attendance"
