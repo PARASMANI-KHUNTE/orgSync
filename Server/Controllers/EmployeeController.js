@@ -203,6 +203,8 @@ exports.login = async (req,res) =>{
             userName : user.Name,
             userEmail : user.Email,
             userPhone : user.Phone,
+            userEmployeeID : user.EmployeeID,
+            Address : user.Address
         }
 
 
