@@ -17,7 +17,7 @@ app.get('/test',(req,res)=>{
     res.send("Server is up");
 });
 
-app.get('/',(req,res)=>{
+app.get('/api/test',(req,res)=>{
     res.send("Server is up");
 });
 
@@ -48,7 +48,8 @@ app.use("/api/departments",DepartmentRoute)
 const EmployeeRoute = require('./Routes/Employee')
 app.use('/api/employee',EmployeeRoute)
 
-
+const AttendanceRoute  =  require('./Routes/AttendenceRoute')
+app.use('/api/attendence'  ,AttendanceRoute)
 
 app.listen(port,()=>{
     console.log(`Server is up on http://localhost:${port}`)

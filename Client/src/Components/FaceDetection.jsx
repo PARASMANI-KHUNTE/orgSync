@@ -1,7 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import * as faceapi from "face-api.js";
 import { toast } from "react-toastify";
-import { motion } from "framer-motion";
 import { FaCamera, FaCameraRetro, FaTimes } from "react-icons/fa";
 import api from "../utils/api";
 
@@ -94,7 +93,7 @@ const FaceDetection = ({ setEmbeddings }) => {
           
          if (response.data.success){
             setCapturedImage(null)
-            toast.success(response.data.message)
+            setEmbeddings(embedding)
           }else{
             setCapturedImage(null)
             setEmbeddings(embedding)

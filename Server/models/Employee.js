@@ -9,9 +9,7 @@ const EmployeeSchema = new mongoose.Schema({
     FaceEmbeddings: {
         type:[[Number]],  // 2D array of 128 numbers
         required: true,
-    
     }
-    
     ,
     Attendance: {  
         type: mongoose.Schema.Types.ObjectId,

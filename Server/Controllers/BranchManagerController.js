@@ -1,7 +1,7 @@
 const BranchManager = require('../models/BranchManager')
 const Organization = require('../models/Organization')
 const argon2 = require('argon2')
-const {generateToken} = require('../Utils/TokenService')
+const {generateTokenForBM} = require('../Utils/TokenService')
 const jwt = require('jsonwebtoken');
 const {sendLink,sendOTP} = require('../Utils/OtpService')
 const faceapi = require("face-api.js");
@@ -305,7 +305,7 @@ exports.login = async (req,res) =>{
         }
 
 
-        const token = await generateToken(payload)
+        const token = await generateTokenForBM(payload)
         
         return res.status(200).json({
             success : true,

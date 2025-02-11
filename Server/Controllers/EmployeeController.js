@@ -258,108 +258,7 @@ exports.updatePassword = async (req, res) => {
         });
     }
 };
-exports.employeeCheckin = async (req,res)=>{
 
-    try {
-        const { embedding } = req.body;
-      
-
-        const id = req.user.payload?.userId;
-
-        // Validate employer ID
-        if (!id) {
-            return res.status(400).json({ message: "Employer ID is required." });
-        }
-
-        // Convert embedding object to an array
-        let parsedEmbedding;
-        try {
-            if (Array.isArray(embedding)) {
-                parsedEmbedding = embedding.map(Number);
-            } else if (embedding instanceof Float32Array) {
-                parsedEmbedding = Array.from(embedding);
-            } else if (typeof embedding === "object" && embedding !== null) {
-                parsedEmbedding = Object.keys(embedding).map(key => Number(embedding[key]));
-            } else {
-                throw new Error("Invalid embedding format.");
-            }
-        } catch (err) {
-            return res.status(400).json({ message: "Invalid embedding format. Expected an array of numbers." });
-        }
-
-        // Ensure parsed embedding contains only valid numbers
-        if (!parsedEmbedding.every(num => typeof num === "number" && !isNaN(num))) {
-            return res.status(400).json({ message: "Embedding array contains invalid values." });
-        }
-
-      
-        // Fetch all employees under the given employer
-        let employees = await Employee.find({ employer: id });
-
-      // Check if embedding already exists in any employee
-for (let employee of employees) {
-    if (!employee.embeddings || employee.embeddings.length === 0) continue;
-
-    for (let storedEmbedding of employee.embeddings) {
-        const distance = faceapi.euclideanDistance(parsedEmbedding, storedEmbedding);
-
-        if (distance < 0.5) {  // Threshold for similarity
-
-            // Get today's date in YYYY-MM-DD format
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            // Check if employee has already checked in today
-            let latestCheckIn = employee.checkInOut.find(entry => {
-                const entryDate = new Date(entry.date);
-                entryDate.setHours(0, 0, 0, 0);
-                return entryDate.getTime() === today.getTime();
-            });
-
-            if (latestCheckIn) {
-                return res.status(200).json({
-                    message: "Already checked in for today.",
-                    success : false,
-                    employeeId: employee._id,
-                    latestCheckIn: {
-                        date: latestCheckIn.date,
-                        checkIn: latestCheckIn.checkIn,
-                        checkOut: latestCheckIn.checkOut
-                    }
-                });
-            }
-
-            // Mark check-in
-            const newCheckIn = {
-                date: new Date(),
-                checkIn: new Date(),
-                checkOut: null // Not checked out yet
-            };
-
-            employee.checkInOut.push(newCheckIn);
-
-            await employee.save(); // Save the updated employee record
-
-            return res.status(200).json({
-                message: "Check-in successful.",
-                success: true,
-                employeeId: employee._id,
-                checkInTime: newCheckIn.checkIn
-            });
-        }
-    }
-}
-
-    
-    }
-    catch(error){
-        return res.status(400).json({
-            message : "Server error "
-        })
-    }
-
-    
-}
 exports.resetPassword = async (req,res) =>{
     const { email } = req.body;
 
@@ -469,6 +368,7 @@ exports.getEmployees = async (req,res) =>{
 
     if(!employees){
         return res.status(200).json({
+            success : false,
             message : "No Employees Found"
         })
     }

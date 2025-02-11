@@ -1,7 +1,10 @@
+import AttendanceTable from "../../Components/AttendanceTable"
 
 const Dashboard = () => {
   return (
-    <div>Dashboard</div>
+    <div>
+      <AttendanceTable />
+    </div>
   )
 }
 

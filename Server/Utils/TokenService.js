@@ -3,6 +3,9 @@ const jsonwebtoken = require('jsonwebtoken');
 const generateToken = async (payload) => {
     return jsonwebtoken.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
 }
+const generateTokenForBM = async (payload) => {
+    return jsonwebtoken.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' });
+}
 
 
 const generateTokenForPassword = (userId) => {
@@ -29,4 +32,4 @@ const tokenVerify = (token) => {
     return { payload: null, isValid: false };
   }
 };
-module.exports = { generateToken, tokenVerify ,generateTokenForPassword};
+module.exports = { generateToken, tokenVerify ,generateTokenForPassword ,generateTokenForBM};
