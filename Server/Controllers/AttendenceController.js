@@ -271,7 +271,7 @@ exports.getAttendance = async (req, res) => {
 
 exports.getAttendanceById = async (req, res) => {
      
-    const id = req.user.payload?.userId;
+    const id = req.user?.payload?.userId;
 
     if (!id) {
         return res.status(400).json({ success: false, message: "Employee ID is required" });
