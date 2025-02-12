@@ -109,7 +109,7 @@ const Organization = () => {
         setOrganization(response.data.organization);
       }
     } catch (error) {
-      console.info("Error fetching organization:", error);
+      toast.info("Error fetching organization:", error);
     } finally {
       setLoading(false);
     }
