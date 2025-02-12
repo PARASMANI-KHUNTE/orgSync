@@ -4,6 +4,8 @@ exports.createDepartment = async (req, res) => {
     try {
         const { Name } = req.body;
         const branchId = req.user?.userbranchId;
+        console.log(branchId)
+        console.log(Name)
 
         
         
