@@ -3,10 +3,10 @@ const Department = require('../models/Department')
 exports.createDepartment = async (req, res) => {
     try {
         const { Name } = req.body;
-        const branchId =  req.user.payload?.userbranchId
+        const branchId =  req.payload?.userbranchId
         
         console.log(Name , branchId)
-        console.log(user)
+        console.log(payload)
         if (!Name || !branchId) {
             return res.status(400).json({ success: false, message: "Name and branchId are required" });
         }
