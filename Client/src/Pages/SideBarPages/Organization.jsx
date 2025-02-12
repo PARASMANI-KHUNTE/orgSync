@@ -109,8 +109,7 @@ const Organization = () => {
         setOrganization(response.data.organization);
       }
     } catch (error) {
-      console.error("Error fetching organization:", error);
-      toast.error("Failed to fetch organization details");
+      console.info("Error fetching organization:", error);
     } finally {
       setLoading(false);
     }
@@ -126,7 +125,7 @@ const Organization = () => {
         setShowForm(false);
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to create organization");
+      toast.info(error.response?.data?.message || "Failed to create organization");
       throw error;
     }
   };
