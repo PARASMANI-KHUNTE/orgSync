@@ -13,8 +13,7 @@ const Dashboard = () => {
 
   const fetchAttendance = async () => {
     try {
-      const employeeId = "67aaf84ffbf1d098d7a1347e"; // Replace with actual ID dynamically
-      const response = await api.get(`/attendence/getAttendence?id=${employeeId}`);
+      const response = await api.get(`/attendence/getAttendanceById`);
 
       if (response.data.success) {
         setAttendance(response.data.AttendanceRecord?.checkInOut || []);
