@@ -12,8 +12,7 @@ const authMiddleware = (req, res, next) => {
         message : "invalid user"
       })
     }
-    req.user = verified.payload; // Directly assign the payload
-
+    req.user = verified;
     next();
   } catch (err) {
     res.status(403).json({ message: 'Invalid token', error: err.message });
