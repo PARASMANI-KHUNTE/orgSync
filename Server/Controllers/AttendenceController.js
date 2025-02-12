@@ -5,7 +5,7 @@ const faceapi = require('face-api.js'); // Ensure this is imported correctly
 exports.checkInOut = async (req, res) => {
     try {
         const { embedding } = req.body;
-        const branchId = req.user.payload?.userbranchId;
+        const branchId = req.user?.payload?.userbranchId;
 
         if (!branchId) {
             return res.status(400).json({ message: "Branch ID is required." });
