@@ -3,8 +3,14 @@ const app = express();
 const dotenv = require('dotenv');
 dotenv.config();
 const cors = require('cors');
+let frontendURl =  ""
+if(process.env.Status == "production"){
+    frontendURl = process.env.FRONTEND_URL
+}else{
+    frontendURl = process.env.DevUrl
+}
 app.use(cors({
-    origin : "https://orgsync.onrender.com"
+    origin : frontendURl
 }));
 app.use(express.json());
 const bodyParser = require('body-parser');

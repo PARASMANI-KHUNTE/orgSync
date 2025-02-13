@@ -1,8 +1,17 @@
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
+const project = import.meta.env.VITE_STATUS;
+let url = "";
+
+if (project === "production") {
+  url = import.meta.env.VITE_API_BASE_URL;
+} else {
+  url = import.meta.env.VITE_DEV_API;
+}
+
 const api = axios.create({
-  baseURL: "https://orgsync-opby.onrender.com/api",
+  baseURL: `${url}/api`,
   headers: {
     'Content-Type': 'application/json',
   },

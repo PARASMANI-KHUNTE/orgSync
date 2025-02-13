@@ -3,14 +3,16 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LineChart, Line, PieChart
 import { motion } from "framer-motion";
 import * as XLSX from "xlsx";
 import api from "../utils/api";
-
+import html2canvas from "html2canvas";
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
 export default function AttendanceReport() {
     const [employees, setEmployees] = useState([]);
     const [attendance, setAttendance] = useState([]);
-    const [dateFilter, setDateFilter] = useState("");
+    const [dateFilter, setDateFilter] = useState(new Date().toISOString().split("T")[0]); // Default to today
     const [view, setView] = useState("table");
+    const [filterType, setFilterType] = useState("day"); // "day", "week", "month", "employee"
+    const [selectedEmployee, setSelectedEmployee] = useState("");
 
     useEffect(() => {
         async function fetchEmployees() {
@@ -42,18 +44,36 @@ export default function AttendanceReport() {
         fetchEmployees();
     }, []);
 
-    // Process and filter data
-    const filteredRecords = attendance.flatMap(record =>
-        record.checkInOut.map(entry => ({
-            employeeID: employees.find(emp => emp._id === record.Employee)?.EmployeeID || "Unknown",
-            name: employees.find(emp => emp._id === record.Employee)?.Name || "Unknown",
-            checkIn: new Date(entry.checkIn).toLocaleString(),
-            checkOut: new Date(entry.checkOut).toLocaleString(),
-            hours: entry.hours,
-            date: entry.date.split("T")[0]
-        }))
-    ).filter(entry => !dateFilter || entry.date === dateFilter)
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // Filter Data
+    const getFilteredRecords = () => {
+        const today = new Date();
+        let filtered = attendance.flatMap(record =>
+            record.checkInOut.map(entry => ({
+                employeeID: employees.find(emp => emp._id === record.Employee)?.EmployeeID || "Unknown",
+                name: employees.find(emp => emp._id === record.Employee)?.Name || "Unknown",
+                checkIn: entry.checkIn ? new Date(entry.checkIn).toLocaleString() : "N/A",
+                checkOut: entry.checkOut ? new Date(entry.checkOut).toLocaleString() : "N/A",
+                hours: entry.hours || 0,
+                date: entry.date.split("T")[0]
+            }))
+        );
+
+        if (filterType === "day") {
+            return filtered.filter(entry => entry.date === dateFilter);
+        } else if (filterType === "week") {
+            const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
+            return filtered.filter(entry => new Date(entry.date) >= startOfWeek);
+        } else if (filterType === "month") {
+            return filtered.filter(entry => entry.date.startsWith(dateFilter.substring(0, 7)));
+        } else if (filterType === "employee") {
+            return filtered.filter(entry => entry.employeeID === selectedEmployee);
+        }
+
+        return filtered;
+    };
+
+    const filteredRecords = getFilteredRecords();
 
     // Export to Excel
     const exportToExcel = () => {
@@ -63,18 +83,80 @@ export default function AttendanceReport() {
         XLSX.writeFile(wb, "Attendance_Report.xlsx");
     };
 
+    // Function to capture the chart and download as image
+const exportGraph = async () => {
+    const chartElement = document.getElementById("chart-container"); // Capture Chart Container
+    if (!chartElement) return alert("No chart available to export!");
+
+    const canvas = await html2canvas(chartElement);
+    const image = canvas.toDataURL("image/png");
+
+    const link = document.createElement("a");
+    link.href = image;
+    link.download = `Attendance_Graph_${view}.png`;
+    link.click();
+};
+const groupedAttendance = employees.map((emp) => {
+    const records = filteredRecords.filter(record => record.employeeID === emp.EmployeeID);
+    
+    return {
+        employeeID: emp.EmployeeID,
+        name: emp.Name,
+        totalHours: records.reduce((sum, rec) => sum + rec.hours, 0), // Sum total hours
+        dates: records.map(r => r.date).join(", ") // Combine all dates into one column
+    };
+});
+const exportFilteredReport = () => {
+    const ws = XLSX.utils.json_to_sheet(groupedAttendance); // Use grouped data
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Filtered_Attendance");
+    XLSX.writeFile(wb, `Attendance_Report_${filterType}.xlsx`);
+};
+
+
     return (
         <div className="p-6 shadow-lg rounded-xl bg-white">
             <h2 className="text-2xl font-semibold mb-4">Attendance Report</h2>
 
-            {/* Filter and View Options */}
-            <div className="flex justify-between items-center mb-4">
-                <input
-                    type="date"
-                    className="p-2 border rounded-md w-1/3"
-                    value={dateFilter}
-                    onChange={(e) => setDateFilter(e.target.value)}
-                />
+            {/* Filters */}
+            <div className="flex flex-wrap gap-4 items-center mb-4">
+                {/* Filter Type */}
+                <select
+                    className="p-2 border rounded-md"
+                    value={filterType}
+                    onChange={(e) => setFilterType(e.target.value)}
+                >
+                    <option value="day">Daily Report</option>
+                    <option value="week">Weekly Report</option>
+                    <option value="month">Monthly Report</option>
+                    <option value="employee">Employee Report</option>
+                </select>
+
+                {/* Date Filter */}
+                {filterType !== "employee" && (
+                    <input
+                        type="date"
+                        className="p-2 border rounded-md"
+                        value={dateFilter}
+                        onChange={(e) => setDateFilter(e.target.value)}
+                    />
+                )}
+
+                {/* Employee Dropdown */}
+                {filterType === "employee" && (
+                    <select
+                        className="p-2 border rounded-md"
+                        value={selectedEmployee}
+                        onChange={(e) => setSelectedEmployee(e.target.value)}
+                    >
+                        <option value="">Select Employee</option>
+                        {employees.map(emp => (
+                            <option key={emp._id} value={emp.EmployeeID}>{emp.Name}</option>
+                        ))}
+                    </select>
+                )}
+
+                {/* View Options */}
                 <select
                     className="p-2 border rounded-md"
                     value={view}
@@ -85,6 +167,7 @@ export default function AttendanceReport() {
                     <option value="line">Line Chart</option>
                     <option value="pie">Pie Chart</option>
                 </select>
+
                 <button onClick={exportToExcel} className="p-2 bg-blue-500 text-white rounded-md">Export to Excel</button>
             </div>
 
@@ -97,16 +180,17 @@ export default function AttendanceReport() {
                 transition={{ duration: 0.3 }}
                 className="w-full"
             >
+                {/* Table View */}
                 {view === "table" && (
                     <div className="overflow-x-auto">
                         <table className="w-full border rounded-lg">
-                            <thead>
-                                <tr className="bg-gray-100 text-gray-700">
-                                    <th className="p-3 font-medium">Employee ID</th>
-                                    <th className="p-3 font-medium">Name</th>
-                                    <th className="p-3 font-medium">Check In</th>
-                                    <th className="p-3 font-medium">Check Out</th>
-                                    <th className="p-3 font-medium">Hours</th>
+                            <thead className="bg-gray-100 text-gray-700">
+                                <tr>
+                                    <th className="p-3">Employee ID</th>
+                                    <th className="p-3">Name</th>
+                                    <th className="p-3">Check In</th>
+                                    <th className="p-3">Check Out</th>
+                                    <th className="p-3">Hours</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -132,45 +216,21 @@ export default function AttendanceReport() {
                     </div>
                 )}
 
-                {/* Bar Chart */}
-                {view === "bar" && (
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={filteredRecords}>
-                            <XAxis dataKey="name" />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Bar dataKey="hours" fill="#8884d8" />
-                        </BarChart>
-                    </ResponsiveContainer>
-                )}
-
-                {/* Line Chart */}
+                {/* Charts */}
+                {view === "bar" && <ResponsiveContainer width="100%" height={300}><BarChart data={filteredRecords}><XAxis dataKey="name" /><YAxis /><Tooltip /><Legend /><Bar dataKey="hours" fill="#8884d8" /></BarChart></ResponsiveContainer>}
                 {view === "line" && (
-                    <ResponsiveContainer width="100%" height={300}>
-                        <LineChart data={filteredRecords}>
-                            <XAxis dataKey="name" />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Line type="monotone" dataKey="hours" stroke="#8884d8" />
-                        </LineChart>
-                    </ResponsiveContainer>
-                )}
+    <ResponsiveContainer width="100%" height={300}>
+        <LineChart data={filteredRecords}>
+            <XAxis dataKey={filterType === "employee" ? "date" : "name"} />
+            <YAxis />
+            <Tooltip formatter={(value, name, props) => [`${value} hrs`, `Date: ${props.payload.date}`]} />
+            <Legend />
+            <Line type="monotone" dataKey="hours" stroke="#8884d8" />
+        </LineChart>
+    </ResponsiveContainer>
+)}
 
-                {/* Pie Chart */}
-                {view === "pie" && (
-                    <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                            <Pie data={filteredRecords} dataKey="hours" nameKey="name" fill="#8884d8" label>
-                                {filteredRecords.map((_, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                            </Pie>
-                            <Tooltip />
-                        </PieChart>
-                    </ResponsiveContainer>
-                )}
+                {view === "pie" && <ResponsiveContainer width="100%" height={300}><PieChart><Pie data={filteredRecords} dataKey="hours" nameKey="name" fill="#8884d8" label>{filteredRecords.map((_, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}</Pie></PieChart></ResponsiveContainer>}
             </motion.div>
         </div>
     );
