@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check, X, Edit } from "lucide-react";
 import api from "../../utils/api";
-
+import { useAuth } from "../../context/AuthContext";
 const EmployeeList = () => {
+  const { user } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [search, setSearch] = useState("");
@@ -37,16 +38,33 @@ const EmployeeList = () => {
     const fetchDepartments = async () => {
       try {
         const response = await api.get("/departments");
+  
         if (response.data.success) {
-          setDepartments(response.data.data || []);
+          const departmentsArray = response.data.data || [];
+  
+          const branchId = user?.userbranchId; // Assuming it's a string
+  
+          if (!branchId) {
+            console.warn("Branch ID is undefined, setting all departments");
+            setDepartments(departmentsArray);
+            return;
+          }
+  
+          // Filter departments where branchId._id matches user.userbranchid
+          const filteredDepartments = departmentsArray.filter(
+            (dept) => dept.branchId?._id === branchId
+          );
+  
+          setDepartments(filteredDepartments);
         }
       } catch (error) {
         console.error("Error fetching departments:", error);
         setDepartments([]);
       }
     };
+  
     fetchDepartments();
-  }, []);
+  }, []); // Dependency array is empty, runs only on mount
 
   const handleEmployeeSelect = (employee) => {
     setSelectedEmployee(employee);
