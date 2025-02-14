@@ -2,7 +2,7 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
 import api from "../../utils/api";
-import FaceDetection from "../../Components/FaceDetection";
+import AttendenceFace from "../../Components/FaceDetection";
 
 const Attendance = () => {
   const [embeddings, setEmbeddings] = useState(null);
@@ -86,7 +86,7 @@ const Attendance = () => {
 
       {/* Face Detection Component */}
      {!embeddings && ( <div className="flex justify-center mb-6">
-        <FaceDetection setEmbeddings={handleFaceDetected} setEmployee={handelAreadyFace} />
+        <AttendenceFace setEmbeddings={handleFaceDetected} setEmployee={handelAreadyFace} />
       </div>)}
 
       {/* Show Buttons only when embeddings exist */}

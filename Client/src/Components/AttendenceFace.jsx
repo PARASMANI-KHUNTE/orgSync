@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import { FaCamera, FaCameraRetro, FaTimes } from "react-icons/fa";
 import api from "../utils/api";
 
-const FaceDetection = ({ setEmbeddings , setEmployee }) => {
+const AttendenceFace = ({ setEmbeddings , setEmployee }) => {
 
   //ml 
 
@@ -92,12 +92,11 @@ const FaceDetection = ({ setEmbeddings , setEmployee }) => {
           const response = await api.post("/employee/checkFace", { embedding });
           
          if (response.data.success){
-          toast.info("Face Already Exist")
             setCapturedImage(null)
+            setEmbeddings(embedding)
             if(response.data.employee){
               setEmployee(response.data.employee)
             }
-            toast.info("Face Already Exist")
           }else{
             setCapturedImage(null)
             setEmbeddings(embedding)
@@ -133,4 +132,4 @@ const FaceDetection = ({ setEmbeddings , setEmployee }) => {
   );
 };
 
-export default FaceDetection;
+export default AttendenceFace;
