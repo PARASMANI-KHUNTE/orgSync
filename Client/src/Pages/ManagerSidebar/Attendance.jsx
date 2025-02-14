@@ -6,11 +6,47 @@ import FaceDetection from "../../Components/FaceDetection";
 
 const Attendance = () => {
   const [embeddings, setEmbeddings] = useState(null);
+  const [employee,setEmployee] = useState(null)
+ const [data,setData] = useState(null)
+  const handelAreadyFace = (employee)=>{
+    if(employee){
+      setEmployee(employee)
+      fetchDepartment(employee)
+      console.log(employee)
+    }
+  }
+
+  const fetchDepartment = async (employee) => {
+    if (!employee || !employee.assignedDepartment) {
+        console.error("Invalid employee data or missing department ID");
+        return;
+    }
+
+    try {
+        console.log("Fetching department for ID:", employee.assignedDepartment);
+        const response = await api.get(`/departments/${employee.assignedDepartment}`); // Using path param
+
+        if (response.data.success) {
+            setData(response.data.data);
+            console.log("Department Data:", response.data.data);
+            console.log(`Data - ${data.Name}`)
+        } else {
+            console.error("Failed to fetch department:", response.data.message);
+        }
+    } catch (error) {
+        console.error("Error fetching department:", error.message);
+    }
+};
+
+  
+ 
 
   const handleFaceDetected = (embeddingData) => {
     if (embeddingData) {
       setEmbeddings(embeddingData);
-      toast.success("Face detected successfully! Proceeding to attendance.");
+      if(employee){
+        toast.success(`${employee.Name}`)
+      }
     } else {
       toast.error("Face detection failed. Please try again.");
     }
@@ -51,18 +87,28 @@ const Attendance = () => {
 
       {/* Face Detection Component */}
       <div className="flex justify-center mb-6">
-        <FaceDetection setEmbeddings={handleFaceDetected} />
+        <FaceDetection setEmbeddings={handleFaceDetected} setEmployee={handelAreadyFace} />
       </div>
 
       {/* Show Buttons only when embeddings exist */}
       {embeddings && (
         <motion.div
-          className="flex justify-between"
+          className="flex justify-between flex-col"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
         >
-          <motion.button
+          <div className="flex flex-col p-3"> 
+            <p className="text-2xl"><h1 className="font-bold">Welcome !</h1> {employee.Name}</p>
+            <p className="text-sm">{employee.Email}</p>
+            <p className="text-violet-500">{employee.EmployeeID}</p>
+            {data && data.Name ? <p>{data.Name}</p> : <p>No department found</p>}
+
+           
+          </div> 
+
+         <div className="flex ">
+         <motion.button
             onClick={() => handleAttendance("/Checkin")}
             className="bg-green-500 hover:bg-green-600 text-white font-medium px-4 py-2 rounded-lg shadow-md w-full mx-1"
             whileHover={{ scale: 1.05 }}
@@ -78,6 +124,7 @@ const Attendance = () => {
           >
             Check Out
           </motion.button>
+         </div>
         </motion.div>
       )}
     </motion.div>

@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import { FaCamera, FaCameraRetro, FaTimes } from "react-icons/fa";
 import api from "../utils/api";
 
-const FaceDetection = ({ setEmbeddings }) => {
+const FaceDetection = ({ setEmbeddings , setEmployee }) => {
 
   //ml 
 
@@ -94,9 +94,13 @@ const FaceDetection = ({ setEmbeddings }) => {
          if (response.data.success){
             setCapturedImage(null)
             setEmbeddings(embedding)
+            if(response.data.employee){
+              setEmployee(response.data.employee)
+            }
           }else{
             setCapturedImage(null)
             setEmbeddings(embedding)
+           
             stopVideo()
           }
            // Store employeeId

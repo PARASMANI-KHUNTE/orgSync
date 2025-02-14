@@ -61,6 +61,7 @@ exports.checkEmployeeFace = async (req, res) => {
                     return res.status(200).json({
                         message: "Face already exists",
                         success: true,
+                        employee
                     });
                 }
             }

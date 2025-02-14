@@ -11,6 +11,33 @@ const EmployeeList = () => {
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [showAssignForm, setShowAssignForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [data,setData] = useState(null)
+
+
+  const fetchDepartment = async (employee) => {
+    if (!employee || !employee.assignedDepartment) {
+        console.error("Invalid employee data or missing department ID");
+        return;
+    }
+
+    try {
+        console.log("Fetching department for ID:", employee.assignedDepartment);
+        const response = await api.get(`/departments/${employee.assignedDepartment}`); // Using path param
+
+        if (response.data.success) {
+            setData(response.data.data);
+            console.log("Department Data:", response.data.data);
+            console.log(`Data - ${data.Name}`)
+        } else {
+            console.error("Failed to fetch department:", response.data.message);
+        }
+    } catch (error) {
+        console.error("Error fetching department:", error.message);
+    }
+};
+
+
+
 
   // Fetch employees
   useEffect(() => {
@@ -226,6 +253,7 @@ const EmployeeList = () => {
               <p className="text-gray-600">
                 Address: {emp.Address.city}, {emp.Address.state} - {emp.Address.pincode}
               </p>
+              {data && data.Name ? <p>{data.Name}</p> : <p>No department found</p>}
               {emp.department && (
                 <p className="text-gray-600 mt-2">
                   Department: {emp.department.Name}
