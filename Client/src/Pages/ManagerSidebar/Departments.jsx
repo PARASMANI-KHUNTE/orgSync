@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import api from "../../utils/api";
+import { useAuth } from "../../context/AuthContext"; // Adjust the import path as needed
 
 const Departments = () => {
+  const {user} = useAuth();
   const [departments, setDepartments] = useState([]);
   const [newDepartment, setNewDepartment] = useState("");
   const [editingDepartment, setEditingDepartment] = useState(null);
@@ -13,22 +15,34 @@ const Departments = () => {
   }, []);
 
   // Fetch all departments
-const fetchDepartments = async () => {
-  try {
-    const response = await api.get("/departments");
-
-    // Ensure departments array is correctly extracted
-    const departmentsArray = Array.isArray(response.data.data) ? response.data.data : [];
-    
-    setDepartments(departmentsArray);
-
-    // Log inside useEffect to check updated state
-  } catch (error) {
-    console.error("Error fetching departments:", error);
-    setDepartments([]);
-  }
-};
-
+  const fetchDepartments = async () => {
+    try {
+      const response = await api.get("/departments");
+  
+      // Ensure departments array is correctly extracted
+      const departmentsArray = Array.isArray(response.data.data) ? response.data.data : [];
+  
+  
+      const branchId = user?.userbranchId; // Assuming this is a string (_id of branch)
+  
+      console.log("User Branch ID:", branchId);
+      console.log("Departments Array:", departmentsArray);
+  
+      // Filter departments based on branchId._id
+      const filteredDepartments = departmentsArray.filter(dept => {
+        console.log("Checking Department:", dept.Name, "Branch ID:", dept.branchId?._id);
+        return dept.branchId?._id === branchId;
+      });
+  
+      console.log("Filtered Departments:", filteredDepartments);
+  
+      setDepartments(filteredDepartments);
+    } catch (error) {
+      console.error("Error fetching departments:", error);
+      setDepartments([]);
+    }
+  };
+  
 
   // Add a new department  -- working
   const handleAddDepartment = async () => {
