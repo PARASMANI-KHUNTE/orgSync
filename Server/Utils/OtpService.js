@@ -18,7 +18,7 @@ const OTP = Math.floor(Math.random() * 9000) + 1000;
 
   // Email options
   const mailOptions = {
-    from: {name : 'FaceTrack' , address : process.env.EMAIL_USER} ,
+    from: {name : 'OrgSync' , address : process.env.EMAIL_USER} ,
     to: email,
     subject: 'OTP Verification',
     text: `Your OTP is: ${OTP}. It will expire in 5 minutes.`,

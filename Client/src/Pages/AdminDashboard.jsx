@@ -2,7 +2,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { FaUser } from "react-icons/fa";
 import {
-  RiDashboardFill,
   RiBuilding2Fill,
   RiOrganizationChart,
   RiUser3Fill,
@@ -10,7 +9,7 @@ import {
   RiLogoutBoxFill,
   RiMenu3Fill,
 } from "react-icons/ri";
-import Dashboard from "./SideBarPages/Dashboard";
+
 import Branch from "./SideBarPages/Branch";
 import Organization from "./SideBarPages/Organization";
 import Employees from "./SideBarPages/Employees";
@@ -26,8 +25,8 @@ const AdminDashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const menuItems = [
-    { name: "Branch", icon: <RiBuilding2Fill /> },
     { name: "Organization", icon: <RiOrganizationChart /> },
+    { name: "Branch", icon: <RiBuilding2Fill /> },
     { name: "Employees", icon: <RiUser3Fill /> },
     { name: "Profile", icon: <FaUser /> },
     
