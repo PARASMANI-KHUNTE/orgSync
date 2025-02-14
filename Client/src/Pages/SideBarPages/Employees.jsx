@@ -423,7 +423,7 @@ const Employees = () => {
   };
 
   const handleDelete = async (id) => {
-    console.log("Deleting Manager ID:", id); // Debugging step
+    
 
     if (window.confirm('Are you sure you want to delete this manager?')) {
       try {
