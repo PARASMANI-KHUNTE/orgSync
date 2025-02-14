@@ -408,3 +408,50 @@ exports.getEmployee = async (req,res) =>{
 
 
 };
+
+
+exports.UpdateEmployeeData = async (req, res) => {
+    try {
+        const { id } = req.params; // Get employee _id from URL params
+        const { EmployeeID, Name, Phone, Address } = req.body;
+        const branchId = req.user.payload?.userbranchId;
+
+
+
+        // Find the employee by _id and BranchId
+        const employee = await Employee.findOne({ _id: id, BranchId: branchId });
+
+        if (!employee) {
+            return res.status(404).json({
+                success: false,
+                message: "Employee not found.",
+            });
+        }
+
+        // Update only the provided fields
+        if (EmployeeID) employee.EmployeeID = EmployeeID;
+        if (Name) employee.Name = Name;
+        if (Phone) employee.Phone = Phone;
+        if (Address) {
+            employee.Address.city = Address.city || employee.Address.city;
+            employee.Address.state = Address.state || employee.Address.state;
+            employee.Address.pincode = Address.pincode || employee.Address.pincode;
+        }
+
+        // Save the updated employee details
+        await employee.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Employee details updated successfully.",
+        });
+
+    } catch (error) {
+        console.error("Error updating employee data:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            error: error.message,
+        });
+    }
+};

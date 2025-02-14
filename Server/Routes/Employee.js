@@ -11,7 +11,8 @@ const {
      resetPassword,
      setNewPassword,
      getEmployees,
-     assignWork}
+     assignWork,
+     UpdateEmployeeData}
      = require('../Controllers/EmployeeController');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 router.post('/Login',login),
@@ -24,4 +25,6 @@ router.post('/reset-password',resetPassword)
 router.put('/updatePassword',setNewPassword)
 router.get('/getEmployees',getEmployees)
 router.post('/assignDepartment',assignWork)
+router.put('/updateEmployeeDetails/:id', UpdateEmployeeData);
+
 module.exports = router;

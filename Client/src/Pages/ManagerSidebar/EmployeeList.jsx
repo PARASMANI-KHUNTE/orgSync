@@ -1,61 +1,31 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Check, X } from "lucide-react";
+import { Check, X, Edit } from "lucide-react";
 import api from "../../utils/api";
 
 const EmployeeList = () => {
   const [employees, setEmployees] = useState([]);
-  const [selectedEmployees, setSelectedEmployees] = useState([]);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [search, setSearch] = useState("");
   const [departments, setDepartments] = useState([]);
   const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [filterDepartment, setFilterDepartment] = useState("");
   const [showAssignForm, setShowAssignForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editData, setEditData] = useState({ EmployeeID: "", Name: "", Phone: "", Address: { city: "", state: "", pincode: "" } });
   const [loading, setLoading] = useState(true);
-  const [data,setData] = useState(null)
 
-
-  const fetchDepartment = async (employee) => {
-    if (!employee || !employee.assignedDepartment) {
-        console.error("Invalid employee data or missing department ID");
-        return;
-    }
-
-    try {
-        console.log("Fetching department for ID:", employee.assignedDepartment);
-        const response = await api.get(`/departments/${employee.assignedDepartment}`); // Using path param
-
-        if (response.data.success) {
-            setData(response.data.data);
-            console.log("Department Data:", response.data.data);
-            console.log(`Data - ${data.Name}`)
-        } else {
-            console.error("Failed to fetch department:", response.data.message);
-        }
-    } catch (error) {
-        console.error("Error fetching department:", error.message);
-    }
-};
-
-
-
-
-  // Fetch employees
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
         setLoading(true);
         const response = await api.get("/employee/getEmployees");
         if (response.data.success) {
-          // Fix: Directly use the employees array instead of wrapping it in another array
-          const employeeData = response.data.employees;
-          console.log(employeeData)
-
-          // Ensure employees is always an array
-          setEmployees(Array.isArray(employeeData) ? employeeData : []);
+          setEmployees(response.data.employees || []);
         }
       } catch (error) {
         console.error("Error fetching employees:", error);
-        setEmployees([]); // Set empty array on error
+        setEmployees([]);
       } finally {
         setLoading(false);
       }
@@ -63,107 +33,104 @@ const EmployeeList = () => {
     fetchEmployees();
   }, []);
 
-  // Fetch departments when assign form is shown
   useEffect(() => {
-    if (showAssignForm) {
-      const fetchDepartments = async () => {
-        try {
-            const response = await api.get("/departments");
-            console.log("Departments API Response:", response.data); // Debugging
-            const departmentData = response.data?.data || [];
-            setDepartments(Array.isArray(departmentData) ? departmentData : []);
-        } catch (error) {
-            console.error("Error fetching departments:", error);
-            setDepartments([]);
+    const fetchDepartments = async () => {
+      try {
+        const response = await api.get("/departments");
+        if (response.data.success) {
+          setDepartments(response.data.data || []);
         }
-    };
-    
-    
-      fetchDepartments();
-    }
-  }, [showAssignForm]);
-
-  const handleEmployeeSelect = (employeeId) => {
-    setSelectedEmployees(prev => {
-      if (prev.includes(employeeId)) {
-        return prev.filter(id => id !== employeeId);
-      } else {
-        return [...prev, employeeId];
+      } catch (error) {
+        console.error("Error fetching departments:", error);
+        setDepartments([]);
       }
-    });
+    };
+    fetchDepartments();
+  }, []);
+
+  const handleEmployeeSelect = (employee) => {
+    setSelectedEmployee(employee);
   };
 
-  const handleAssignDepartment = async () => {
-    if (!selectedDepartment) return;
+  const handleEditClick = () => {
+    if (!selectedEmployee) return;
+    setEditData({ ...selectedEmployee });
+    setShowEditForm(true);
+  };
 
+  const handleEditSave = async () => {
     try {
-      await Promise.all(selectedEmployees.map(employeeId => 
-        api.post("/employee/assignDepartment", {
-          employeeId,
-          departmentId: selectedDepartment
-        })
-      ));
-
-      // Reset states after successful assignment
-      setSelectedEmployees([]);
-      setSelectedDepartment("");
-      setShowAssignForm(false);
+      await api.put(`/employee/updateEmployeeDetails/${selectedEmployee._id}`, editData);
+      setEmployees(prev => prev.map(emp => (emp._id === selectedEmployee._id ? { ...emp, ...editData } : emp)));
+      setShowEditForm(false);
+      setSelectedEmployee(null);
+    } catch (error) {
+      console.error("Error updating employee:", error);
+    }
+  };
+    // Fetch departments when assign form is shown
+    useEffect(() => {
+      if (showAssignForm) {
+        const fetchDepartments = async () => {
+          try {
+              const response = await api.get("/departments");
+              console.log("Departments API Response:", response.data); // Debugging
+              const departmentData = response.data?.data || [];
+              setDepartments(Array.isArray(departmentData) ? departmentData : []);
+          } catch (error) {
+              console.error("Error fetching departments:", error);
+              setDepartments([]);
+          }
+      };
       
-      // Refresh employee list
-      const response = await api.get("/employee/getEmployees");
-      if (response.data.success) {
-        setEmployees(response.data.employees || []);
+      
+        fetchDepartments();
       }
-      
+    }, [showAssignForm]);
+
+  const handleAssignDepartment = async () => {
+    if (!selectedDepartment || !selectedEmployee) return;
+    try {
+      await api.post("/employee/assignDepartment", { employeeId: selectedEmployee._id, departmentId: selectedDepartment });
+      setEmployees(prev => prev.map(emp => (emp._id === selectedEmployee._id ? { ...emp, assignedDepartment: selectedDepartment } : emp)));
+      setShowAssignForm(false);
+      setSelectedEmployee(null);
     } catch (error) {
       console.error("Error assigning department:", error);
     }
   };
 
-  const filteredEmployees = employees.filter((emp) =>
-    emp?.EmployeeID?.toLowerCase().includes(search.toLowerCase())
-  ) || [];
+  const filteredEmployees = employees.filter(emp => 
+    emp?.EmployeeID?.toLowerCase().includes(search.toLowerCase()) &&
+    (filterDepartment ? emp.assignedDepartment === filterDepartment : true)
+  );
 
-  if (loading) {
-    return (
-      <div className="max-w-4xl mx-auto p-6 flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
-      </div>
-    );
-  }
+  if (loading) return <div className="text-center">Loading...</div>;
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <motion.h1
-        className="text-3xl font-bold text-center mb-6"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        Employee List
-      </motion.h1>
-
-      <div className="flex items-center justify-between mb-4">
-        <input
-          type="text"
-          placeholder="Search by Employee ID"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-2/3 p-2 border rounded shadow-sm"
-        />
-        
-        {selectedEmployees.length > 0 && (
-          <button
-            onClick={() => setShowAssignForm(true)}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
-          >
-            Assign Department ({selectedEmployees.length})
-          </button>
+    <div className="max-w-6xl mx-auto p-6">
+      <motion.h1 className="text-3xl font-bold text-center mb-6">Employee List</motion.h1>
+      <div className="flex justify-between mb-4">
+        <input type="text" placeholder="Search by Employee ID" value={search} 
+          onChange={(e) => setSearch(e.target.value)} className="p-2 border rounded" />
+        <select value={filterDepartment} onChange={(e) => setFilterDepartment(e.target.value)}
+          className="p-2 border rounded">
+          <option value="">All Departments</option>
+          {departments.map(dept => <option key={dept._id} value={dept._id}>{dept.Name}</option>)}
+        </select>
+        {selectedEmployee && (
+          <div className="space-x-2">
+            <button onClick={() => setShowAssignForm(true)} className="bg-blue-500 text-white px-4 py-2 rounded">
+              Assign Department
+            </button>
+            <button onClick={handleEditClick} className="bg-green-500 text-white px-4 py-2 rounded">
+              Edit
+            </button>
+          </div>
         )}
       </div>
-
-      {/* Department Assignment Form */}
-      {showAssignForm && (
+        {/* Department Assignment Form */}
+        {showAssignForm && (
         <motion.div 
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
           initial={{ opacity: 0 }}
@@ -217,52 +184,45 @@ const EmployeeList = () => {
         </motion.div>
       )}
 
-      {employees.length === 0 ? (
-        <div className="text-center text-gray-500 py-8">
-          No employees found
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredEmployees.map((emp) => (
-            <motion.div
-              key={emp._id}
-              className={`p-4 border rounded-lg shadow-md bg-white relative ${
-                selectedEmployees.includes(emp._id) ? 'border-blue-500 ring-2 ring-blue-200' : ''
-              }`}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="absolute top-2 right-2">
-                <button
-                  onClick={() => handleEmployeeSelect(emp._id)}
-                  className={`w-6 h-6 rounded-full border flex items-center justify-center ${
-                    selectedEmployees.includes(emp._id)
-                      ? 'bg-blue-500 border-blue-500 text-white'
-                      : 'border-gray-300 hover:border-blue-500'
-                  }`}
-                >
-                  {selectedEmployees.includes(emp._id) && <Check size={14} />}
-                </button>
-              </div>
-
-              <h2 className="text-lg font-semibold">{emp.Name}</h2>
-              <p className="text-gray-600">ID: {emp.EmployeeID}</p>
-              <p className="text-gray-600">Email: {emp.Email}</p>
-              <p className="text-gray-600">Phone: {emp.Phone}</p>
-              <p className="text-gray-600">
-                Address: {emp.Address.city}, {emp.Address.state} - {emp.Address.pincode}
-              </p>
-              {data && data.Name ? <p>{data.Name}</p> : <p>No department found</p>}
-              {emp.department && (
-                <p className="text-gray-600 mt-2">
-                  Department: {emp.department.Name}
-                </p>
-              )}
-            </motion.div>
-          ))}
+      {showEditForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl font-semibold">Edit Employee</h2>
+            <input type="text" value={editData.EmployeeID} onChange={(e) => setEditData({...editData, EmployeeID: e.target.value})} className="w-full p-2 border rounded mb-2" placeholder="Employee ID" />
+            <input type="text" value={editData.Name} onChange={(e) => setEditData({...editData, Name: e.target.value})} className="w-full p-2 border rounded mb-2" placeholder="Name" />
+            <input type="text" value={editData.Phone} onChange={(e) => setEditData({...editData, Phone: e.target.value})} className="w-full p-2 border rounded mb-2" placeholder="Phone" />
+            <button onClick={handleEditSave} className="px-4 py-2 bg-green-500 text-white rounded">Save</button>
+            <button onClick={() => setShowEditForm(false)} className="ml-2 px-4 py-2 border rounded">Cancel</button>
+          </div>
         </div>
       )}
+
+      <table className="w-full border-collapse border border-gray-300 mt-4">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="border p-2">Select</th>
+            <th className="border p-2">Name</th>
+            <th className="border p-2">Employee ID</th>
+            <th className="border p-2">Email</th>
+            <th className="border p-2">Phone</th>
+            <th className="border p-2">Address</th>
+            <th className="border p-2">Department</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredEmployees.map(emp => (
+            <tr key={emp._id} className="border" onClick={() => handleEmployeeSelect(emp)}>
+              <td className="border p-2 text-center">{selectedEmployee?._id === emp._id && <Check size={14} />}</td>
+              <td className="border p-2">{emp.Name}</td>
+              <td className="border p-2">{emp.EmployeeID}</td>
+              <td className="border p-2">{emp.Email}</td>
+              <td className="border p-2">{emp.Phone}</td>
+              <td className="border p-2">{emp.Address.city}, {emp.Address.state} - {emp.Address.pincode}</td>
+              <td className="border p-2">{departments.find(d => d._id === emp.assignedDepartment)?.Name || 'No Department'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };
