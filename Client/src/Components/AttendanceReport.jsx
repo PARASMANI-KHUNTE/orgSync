@@ -8,9 +8,9 @@ const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 export default function AttendanceReport() {
     const [employees, setEmployees] = useState([]);
     const [attendance, setAttendance] = useState([]);
-    const [dateFilter, setDateFilter] = useState(new Date().toISOString().split("T")[0]); // Default to today
+    const [dateFilter, setDateFilter] = useState(new Date().toISOString().split("T")[0]);
     const [view, setView] = useState("table");
-    const [filterType, setFilterType] = useState("day"); // "day", "week", "month", "employee"
+    const [filterType, setFilterType] = useState("day");
     const [selectedEmployee, setSelectedEmployee] = useState("");
 
     useEffect(() => {
@@ -43,8 +43,6 @@ export default function AttendanceReport() {
         fetchEmployees();
     }, []);
 
-
-    // Filter Data
     const getFilteredRecords = () => {
         const today = new Date();
         let filtered = attendance.flatMap(record =>
@@ -53,8 +51,9 @@ export default function AttendanceReport() {
                 name: employees.find(emp => emp._id === record.Employee)?.Name || "Unknown",
                 checkIn: entry.checkIn ? new Date(entry.checkIn).toLocaleString() : "N/A",
                 checkOut: entry.checkOut ? new Date(entry.checkOut).toLocaleString() : "N/A",
-                hours: entry.hours || 0,
-                date: entry.date.split("T")[0]
+                formattedHours: entry.formattedHours || "N/A",
+                hours: entry.hours || 0, // Keep hours for charts
+                date: new Date(entry.date).toISOString().split("T")[0]
             }))
         );
 
@@ -74,7 +73,17 @@ export default function AttendanceReport() {
 
     const filteredRecords = getFilteredRecords();
 
-    // Export to Excel
+    const groupedAttendance = employees.map((emp) => {
+        const records = filteredRecords.filter(record => record.employeeID === emp.EmployeeID);
+        return {
+            employeeID: emp.EmployeeID,
+            name: emp.Name,
+            totalHours: records.reduce((sum, rec) => sum + rec.hours, 0),
+            formattedTotalHours: records.length > 0 ? records.map(r => r.formattedHours).join(", ") : "N/A",
+            dates: records.map(r => r.date).join(", ")
+        };
+    });
+
     const exportToExcel = () => {
         const ws = XLSX.utils.json_to_sheet(filteredRecords);
         const wb = XLSX.utils.book_new();
@@ -82,32 +91,18 @@ export default function AttendanceReport() {
         XLSX.writeFile(wb, "Attendance_Report.xlsx");
     };
 
-
-const groupedAttendance = employees.map((emp) => {
-    const records = filteredRecords.filter(record => record.employeeID === emp.EmployeeID);
-    
-    return {
-        employeeID: emp.EmployeeID,
-        name: emp.Name,
-        totalHours: records.reduce((sum, rec) => sum + rec.hours, 0), // Sum total hours
-        dates: records.map(r => r.date).join(", ") // Combine all dates into one column
+    const exportFilteredReport = () => {
+        const ws = XLSX.utils.json_to_sheet(groupedAttendance);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Filtered_Attendance");
+        XLSX.writeFile(wb, `Attendance_Report_${filterType}.xlsx`);
     };
-});
-const exportFilteredReport = () => {
-    const ws = XLSX.utils.json_to_sheet(groupedAttendance); // Use grouped data
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Filtered_Attendance");
-    XLSX.writeFile(wb, `Attendance_Report_${filterType}.xlsx`);
-};
-
 
     return (
         <div className="p-6 shadow-lg rounded-xl bg-white">
             <h2 className="text-2xl font-semibold mb-4">Attendance Report</h2>
 
-            {/* Filters */}
             <div className="flex flex-wrap gap-4 items-center mb-4">
-                {/* Filter Type */}
                 <select
                     className="p-2 border rounded-md"
                     value={filterType}
@@ -119,7 +114,6 @@ const exportFilteredReport = () => {
                     <option value="employee">Employee Report</option>
                 </select>
 
-                {/* Date Filter */}
                 {filterType !== "employee" && (
                     <input
                         type="date"
@@ -129,7 +123,6 @@ const exportFilteredReport = () => {
                     />
                 )}
 
-                {/* Employee Dropdown */}
                 {filterType === "employee" && (
                     <select
                         className="p-2 border rounded-md"
@@ -143,7 +136,6 @@ const exportFilteredReport = () => {
                     </select>
                 )}
 
-                {/* View Options */}
                 <select
                     className="p-2 border rounded-md"
                     value={view}
@@ -159,7 +151,6 @@ const exportFilteredReport = () => {
                 <button onClick={exportFilteredReport} className="p-2 bg-blue-500 text-white rounded-md">Export filtered data</button>
             </div>
 
-            {/* Animated View */}
             <motion.div 
                 key={view}
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -168,7 +159,6 @@ const exportFilteredReport = () => {
                 transition={{ duration: 0.3 }}
                 className="w-full"
             >
-                {/* Table View */}
                 {view === "table" && (
                     <div className="overflow-x-auto">
                         <table className="w-full border rounded-lg">
@@ -189,7 +179,7 @@ const exportFilteredReport = () => {
                                             <td className="p-3">{record.name}</td>
                                             <td className="p-3">{record.checkIn}</td>
                                             <td className="p-3">{record.checkOut}</td>
-                                            <td className="p-3">{record.hours.toFixed(2)}</td>
+                                            <td className="p-3">{record.formattedHours}</td>
                                         </tr>
                                     ))
                                 ) : (
@@ -204,21 +194,50 @@ const exportFilteredReport = () => {
                     </div>
                 )}
 
-                {/* Charts */}
-                {view === "bar" && <ResponsiveContainer width="100%" height={300}><BarChart data={filteredRecords}><XAxis dataKey="name" /><YAxis /><Tooltip /><Legend /><Bar dataKey="hours" fill="#8884d8" /></BarChart></ResponsiveContainer>}
-                {view === "line" && (
-    <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={filteredRecords}>
-            <XAxis dataKey={filterType === "employee" ? "date" : "name"} />
-            <YAxis />
-            <Tooltip formatter={(value, name, props) => [`${value} hrs`, `Date: ${props.payload.date}`]} />
-            <Legend />
-            <Line type="monotone" dataKey="hours" stroke="#8884d8" />
-        </LineChart>
-    </ResponsiveContainer>
-)}
+                {view === "bar" && (
+                    <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={filteredRecords}>
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip formatter={(value, name) => [value + " hours", "Working Duration"]} />
+                            <Legend />
+                            <Bar dataKey="hours" fill="#8884d8" />
+                        </BarChart>
+                    </ResponsiveContainer>
+                )}
 
-                {view === "pie" && <ResponsiveContainer width="100%" height={300}><PieChart><Pie data={filteredRecords} dataKey="hours" nameKey="name" fill="#8884d8" label>{filteredRecords.map((_, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}</Pie></PieChart></ResponsiveContainer>}
+                {view === "line" && (
+                    <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={filteredRecords}>
+                            <XAxis dataKey={filterType === "employee" ? "date" : "name"} />
+                            <YAxis />
+                            <Tooltip formatter={(value, name, props) => [
+                                props.payload.formattedHours,
+                                `Date: ${props.payload.date}`
+                            ]} />
+                            <Legend />
+                            <Line type="monotone" dataKey="hours" stroke="#8884d8" />
+                        </LineChart>
+                    </ResponsiveContainer>
+                )}
+
+                {view === "pie" && (
+                    <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                            <Pie 
+                                data={filteredRecords} 
+                                dataKey="hours" 
+                                nameKey="name" 
+                                fill="#8884d8" 
+                                label={({ name, formattedHours }) => `${name}: ${formattedHours}`}
+                            >
+                                {filteredRecords.map((_, index) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                            </Pie>
+                        </PieChart>
+                    </ResponsiveContainer>
+                )}
             </motion.div>
         </div>
     );
