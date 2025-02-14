@@ -3,7 +3,6 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LineChart, Line, PieChart
 import { motion } from "framer-motion";
 import * as XLSX from "xlsx";
 import api from "../utils/api";
-import html2canvas from "html2canvas";
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
 export default function AttendanceReport() {
@@ -83,19 +82,7 @@ export default function AttendanceReport() {
         XLSX.writeFile(wb, "Attendance_Report.xlsx");
     };
 
-    // Function to capture the chart and download as image
-const exportGraph = async () => {
-    const chartElement = document.getElementById("chart-container"); // Capture Chart Container
-    if (!chartElement) return alert("No chart available to export!");
 
-    const canvas = await html2canvas(chartElement);
-    const image = canvas.toDataURL("image/png");
-
-    const link = document.createElement("a");
-    link.href = image;
-    link.download = `Attendance_Graph_${view}.png`;
-    link.click();
-};
 const groupedAttendance = employees.map((emp) => {
     const records = filteredRecords.filter(record => record.employeeID === emp.EmployeeID);
     
@@ -169,6 +156,7 @@ const exportFilteredReport = () => {
                 </select>
 
                 <button onClick={exportToExcel} className="p-2 bg-blue-500 text-white rounded-md">Export to Excel</button>
+                <button onClick={exportFilteredReport} className="p-2 bg-blue-500 text-white rounded-md">Export filtered data</button>
             </div>
 
             {/* Animated View */}
@@ -190,7 +178,7 @@ const exportFilteredReport = () => {
                                     <th className="p-3">Name</th>
                                     <th className="p-3">Check In</th>
                                     <th className="p-3">Check Out</th>
-                                    <th className="p-3">Hours</th>
+                                    <th className="p-3">Working Duration</th>
                                 </tr>
                             </thead>
                             <tbody>

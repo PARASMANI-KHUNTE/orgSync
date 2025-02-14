@@ -25,16 +25,14 @@ const Departments = () => {
   
       const branchId = user?.userbranchId; // Assuming this is a string (_id of branch)
   
-      console.log("User Branch ID:", branchId);
-      console.log("Departments Array:", departmentsArray);
   
       // Filter departments based on branchId._id
       const filteredDepartments = departmentsArray.filter(dept => {
-        console.log("Checking Department:", dept.Name, "Branch ID:", dept.branchId?._id);
+ 
         return dept.branchId?._id === branchId;
       });
   
-      console.log("Filtered Departments:", filteredDepartments);
+   
   
       setDepartments(filteredDepartments);
     } catch (error) {

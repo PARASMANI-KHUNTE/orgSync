@@ -27,14 +27,15 @@ const Attendance = () => {
         const response = await api.get(`/departments/${employee.assignedDepartment}`); // Using path param
 
         if (response.data.success) {
-            setData(response.data.data);
-            console.log("Department Data:", response.data.data);
-            console.log(`Data - ${data.Name}`)
+          setData(response.data.data || null);
+        
         } else {
             console.error("Failed to fetch department:", response.data.message);
+            setData(null);
         }
     } catch (error) {
         console.error("Error fetching department:", error.message);
+        setData(null);
     }
 };
 
@@ -81,14 +82,12 @@ const Attendance = () => {
       <h2 className="text-3xl font-bold text-gray-800 text-center mb-4">
         Attendance
       </h2>
-      <p className="text-gray-600 text-center mb-6">
-        Scan your face to mark attendance.
-      </p>
+ 
 
       {/* Face Detection Component */}
-      <div className="flex justify-center mb-6">
+     {!embeddings && ( <div className="flex justify-center mb-6">
         <FaceDetection setEmbeddings={handleFaceDetected} setEmployee={handelAreadyFace} />
-      </div>
+      </div>)}
 
       {/* Show Buttons only when embeddings exist */}
       {embeddings && (
@@ -98,14 +97,17 @@ const Attendance = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
         >
-         {employee && ( <div className="flex flex-col p-3"> 
-            <p className="text-2xl"><h1 className="font-bold">Welcome !</h1> {employee.Name}</p>
-            <p className="text-sm">{employee.Email}</p>
-            <p className="text-violet-500">{employee.EmployeeID}</p>
-            {data && data.Name ? <p>{data.Name}</p> : <p>No department found</p>}
+        {employee && (
+  <div className="flex flex-col p-3">
+    <h1 className="text-2xl font-bold">Welcome!</h1> 
+    <p className="text-2xl">{employee.Name}</p>
+    <p className="text-sm">{employee.Email}</p>
+    <p className="text-violet-500">{employee.EmployeeID}</p>
+    {data && data.Name ? <p>{data.Name}</p> : <p>No department found</p>}
 
-           
-          </div> )}
+  </div>
+)}
+
 
          <div className="flex ">
          <motion.button
