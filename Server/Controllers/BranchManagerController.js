@@ -56,7 +56,10 @@ exports.addBranchManager  = async(req,res)=>{
             })
         }
 
-        const CheckValidation = await BranchManager.findOne({EmployeeID , Name , Email , Phone})
+        const CheckValidation = await BranchManager.findOne({
+            $or: [{ EmployeeID }, { Email }, { Phone }]
+        });
+        
         if(CheckValidation){
             return res.status(400).json({
                 success : false,
@@ -94,7 +97,7 @@ exports.addBranchManager  = async(req,res)=>{
 }
 exports.removeBranchManager = async(req,res)=>{
     try {
-        const { id } = req.body;
+        const { id } = req.params;
         const BM = await BranchManager.findOneAndDelete(id);
         if (!BM) {
             return res.status(404).json({

@@ -14,7 +14,6 @@ import PropTypes from 'prop-types';
 import api from '../../utils/api';
 import { useAuth } from "../../context/AuthContext";
 import { toast } from 'react-toastify';
-
 const EmployeeModal = ({ isOpen, onClose, onSubmit, editingEmployee, loading }) => {
   const [formData, setFormData] = useState({
     EmployeeID: '',
@@ -407,10 +406,13 @@ const Employees = () => {
           });
       
       const response = await handler();
+      console.log(response)
       if (response.data.success) {
         await fetchManagers();
         handleCloseModal();
         toast.success(editingEmployee ? 'Manager updated successfully' : 'Manager added successfully');
+      }else{
+        toast.info(response.data.success)
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Operation failed');
@@ -421,15 +423,19 @@ const Employees = () => {
   };
 
   const handleDelete = async (id) => {
+    console.log("Deleting Manager ID:", id); // Debugging step
+
     if (window.confirm('Are you sure you want to delete this manager?')) {
       try {
         setLoading(true);
-        const response = await api.delete('/branchManager/remove', { 
-          data: { _id: id }
-        });
+
+        const response = await api.delete(`/branchManager/remove/${id}`);
+        
         if (response.data.success) {
-          await fetchManagers();
+          setManagers(prevManagers => prevManagers.filter(manager => manager._id !== id)); // Remove deleted manager
           toast.success('Manager deleted successfully');
+        } else {
+          toast.error('Failed to delete manager');
         }
       } catch (err) {
         setError('Deletion failed');
@@ -438,7 +444,8 @@ const Employees = () => {
         setLoading(false);
       }
     }
-  };
+};
+
 
   const handleSendVerification = async (id) => {
     try {
@@ -527,26 +534,26 @@ const Employees = () => {
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <AnimatePresence>
-              {managers.map((manager) => (
-                <ManagerCard
-                  key={manager._id}
-                  manager={manager}
-                  branchDetails={branchDetails}
-                  onEdit={(manager) => {
-                    setEditingEmployee(manager);
-                    setIsModalOpen(true);
-                  }}
-                  onDelete={handleDelete}
-                  onSendVerification={handleSendVerification}
-                  onAssignBranch={(managerId) => {
-                    setSelectedManagerId(managerId);
-                    setIsAssignModalOpen(true);
-                  }}
-                />
-              ))}
-            </AnimatePresence>
-          </div>
+  {managers.map((manager) => (
+    <AnimatePresence key={manager._id}>
+      <ManagerCard
+        key={manager._id}
+        manager={manager}
+        branchDetails={branchDetails}
+        onEdit={(manager) => {
+          setEditingEmployee(manager);
+          setIsModalOpen(true);
+        }}
+        onDelete={handleDelete}
+        onSendVerification={handleSendVerification}
+        onAssignBranch={(managerId) => {
+          setSelectedManagerId(managerId);
+          setIsAssignModalOpen(true);
+        }}
+      />
+    </AnimatePresence>
+  ))}
+</div>
         )}
 
         <EmployeeModal
