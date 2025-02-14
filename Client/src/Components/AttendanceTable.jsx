@@ -25,6 +25,7 @@ export default function AttendanceTable() {
                 const attendanceRecords = await Promise.all(
                     employeeIds.map(async (id) => {
                         const response = await api.get(`/attendence/getAttendence?id=${id}`);
+                    
                         return response.data.success ? response.data.AttendanceRecord : null;
                     })
                 );
@@ -45,7 +46,7 @@ export default function AttendanceTable() {
             name: employees.find(emp => emp._id === record.Employee)?.Name || "Unknown",
             checkIn: entry.checkIn,
             checkOut: entry.checkOut,
-            hours: entry.hours,
+            formattedHours: entry.formattedHours,
             date: entry.date.split("T")[0]
         }))
     )
@@ -72,7 +73,7 @@ export default function AttendanceTable() {
                             <th className="p-3">Name</th>
                             <th className="p-3 text-center">Check In</th>
                             <th className="p-3 text-center">Check Out</th>
-                            <th className="p-3 text-center">Hours</th>
+                            <th className="p-3 text-center">Working Time</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -103,7 +104,7 @@ export default function AttendanceTable() {
                                     <td className="p-3 whitespace-nowrap text-center">
                                         <div className="flex items-center justify-center gap-2">
                                             <Clock className="text-blue-500 w-5 h-5" />
-                                            {record.hours ? record.hours.toFixed(2) : "0.00"}
+                                            {record.formattedHours ? record.formattedHours : "0.00"}
                                         </div>
                                     </td>
                                 </tr>

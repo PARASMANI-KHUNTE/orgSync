@@ -98,14 +98,14 @@ const Attendance = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
         >
-          <div className="flex flex-col p-3"> 
+         {employee && ( <div className="flex flex-col p-3"> 
             <p className="text-2xl"><h1 className="font-bold">Welcome !</h1> {employee.Name}</p>
             <p className="text-sm">{employee.Email}</p>
             <p className="text-violet-500">{employee.EmployeeID}</p>
             {data && data.Name ? <p>{data.Name}</p> : <p>No department found</p>}
 
            
-          </div> 
+          </div> )}
 
          <div className="flex ">
          <motion.button
