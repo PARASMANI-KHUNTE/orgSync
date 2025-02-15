@@ -92,12 +92,11 @@ const FaceDetection = ({ setEmbeddings , setEmployee }) => {
           const response = await api.post("/employee/checkFace", { embedding });
           
          if (response.data.success){
-          toast.info("Face Already Exist")
-            setCapturedImage(null)
+          setCapturedImage(null)
+            setEmbeddings(embedding)
             if(response.data.employee){
               setEmployee(response.data.employee)
-            }
-            toast.info("Face Already Exist")
+            } 
           }else{
             setCapturedImage(null)
             setEmbeddings(embedding)

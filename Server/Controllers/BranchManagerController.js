@@ -5,7 +5,12 @@ const {generateTokenForBM} = require('../Utils/TokenService')
 const jwt = require('jsonwebtoken');
 const {sendLink,sendOTP} = require('../Utils/OtpService')
 const faceapi = require("face-api.js");
-
+let frontendURl =  ""
+if(process.env.Status == "production"){
+    frontendURl = process.env.FRONTEND_URL
+}else{
+    frontendURl = process.env.DevUrl
+}
 exports.getBranchManagers = async(req,res)=>{
     try {
         const {AdminId} = req.body;
@@ -219,7 +224,7 @@ exports.sendVerificationLink = async (req, res) => {
     );
 
     // Create verification link
-    const verificationLink = `${process.env.FRONTEND_URL}/set-password/${token}`;
+    const verificationLink = `${frontendURl}/set-password/${token}`;
 
     // Send email with verification link
     // Using your email service (nodemailer, sendgrid, etc.)

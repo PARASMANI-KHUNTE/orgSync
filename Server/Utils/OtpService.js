@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
+
 const otpStore = new Map(); 
 
 const sendOTP = async (email) => {
