@@ -97,6 +97,7 @@ const FaceDetection = ({ setEmbeddings , setEmployee }) => {
             if(response.data.employee){
               setEmployee(response.data.employee)
             } 
+            stopVideo()
           }else{
             setCapturedImage(null)
             setEmbeddings(embedding)

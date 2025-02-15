@@ -98,6 +98,7 @@ const AttendenceFace = ({ setEmbeddings , setEmployee }) => {
               setEmployee(response.data.employee)
             }
             toast.info("Face Already Exist")
+            stopVideo()
           }else{
             setCapturedImage(null)
             setEmbeddings(embedding)
