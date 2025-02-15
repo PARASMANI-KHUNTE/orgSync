@@ -2,7 +2,7 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
 import api from "../../utils/api";
-import AttendenceFace from "../../Components/FaceDetection";
+import AttendenceFace from "../../Components/AttendenceFace";
 
 const Attendance = () => {
   const [embeddings, setEmbeddings] = useState(null);
