@@ -11,7 +11,7 @@ import {
 } from "react-icons/ri";
 import Dashboard from "./ManagerSidebar/Dashboard";
 import EmployeeList from "./ManagerSidebar/EmployeeList";
-import Attendence from "./ManagerSidebar/Attendance";
+import Attendence from "../Components/AttendenceFace";
 import Profile from "./SideBarPages/Profile";
 import Report from "./ManagerSidebar/Report";
 import Departments from "./ManagerSidebar/Departments";

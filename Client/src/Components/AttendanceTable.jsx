@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../utils/api";
+import { toast } from "react-toastify";
 import { CheckCircle, XCircle, Clock, AlertTriangle } from "lucide-react"; // Icons
 
 export default function AttendanceTable() {
@@ -25,6 +26,9 @@ export default function AttendanceTable() {
                 const attendanceRecords = await Promise.all(
                     employeeIds.map(async (id) => {
                         const response = await api.get(`/attendence/getAttendence?id=${id}`);
+                        if(!response.data.success){
+                         toast.info(response.data.message)
+                        }
                     
                         return response.data.success ? response.data.AttendanceRecord : null;
                     })
