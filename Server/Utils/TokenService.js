@@ -13,7 +13,7 @@ const generateTokenForPassword = (userId) => {
   const token = jsonwebtoken.sign(
     { userId }, // payload
     secretKey,
-    { expiresIn: '1h' } // token valid for 24 hours
+    { expiresIn: '1h' } 
   );
   return token;
 };

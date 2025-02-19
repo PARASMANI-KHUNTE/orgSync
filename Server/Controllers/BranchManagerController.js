@@ -51,55 +51,94 @@ exports.getBranchManagers = async(req,res)=>{
         
     }
 }
-exports.addBranchManager  = async(req,res)=>{
+const Joi = require("joi");
+
+
+const mongoose = require("mongoose");
+
+exports.addBranchManager = async (req, res) => {
     try {
-        const {EmployeeID , Name , Email , Phone , AdminId } = req.body;
-        if(!EmployeeID || !Name || !Email || !Phone || !AdminId){
-            return res.status(400).json({
-                success : false,
-                message : "Data is missing"
-            })
-        }
+        const { EmployeeID, Name, Email, Phone, AdminId } = req.body;
 
-        const CheckValidation = await BranchManager.findOne({
-            $or: [{ EmployeeID }, { Email }, { Phone }]
+        // Define Joi validation schema
+        const schema = Joi.object({
+            EmployeeID: Joi.string().trim().required(),
+            Name: Joi.string().trim().required(),
+            Email: Joi.string().email().trim().required(),
+            Phone: Joi.string()
+                .pattern(/^[6-9]\d{9}$/)
+                .required()
+                .messages({
+                    "string.pattern.base": "Please enter a valid 10-digit phone number starting with 6, 7, 8, or 9.",
+                }),
+            AdminId: Joi.string().trim().required(),
         });
-        
-        if(CheckValidation){
+
+        // Validate request body using Joi
+        const { error } = schema.validate(req.body);
+        if (error) {
             return res.status(400).json({
-                success : false,
-                message : "User already Exist"
-            })
+                success: false,
+                message: error.details[0].message,
+            });
         }
 
-        const org = await Organization.findOne({AdminId})
-        if(!org){
-            return res.status(400).json({
-                success : false,
-                message : "No Organization Found"
-            })
+        // Check if the Branch Manager already exists
+        const existingManager = await BranchManager.findOne({
+            $or: [{ EmployeeID }, { Email }, { Phone }],
+        });
+
+        if (existingManager) {
+            return res.status(409).json({
+                success: false,
+                message: "A Branch Manager with the same Employee ID, Email, or Phone already exists.",
+            });
         }
 
-        const NewBranchManager = new BranchManager({
-            EmployeeID , Name , Email , Phone , OrgId : org.id
-        })
+        // Check if the organization exists
+        const organization = await Organization.findOne({ AdminId });
 
-        await NewBranchManager.save()
+        if (!organization) {
+            return res.status(404).json({
+                success: false,
+                message: "No organization found with the given AdminId.",
+            });
+        }
 
-        return res.status(200).json({
-            success : true,
-            message : "Data has been saved"
-        })
+        // Create and save the new Branch Manager
+        const newBranchManager = new BranchManager({
+            EmployeeID,
+            Name,
+            Email,
+            Phone,
+            OrgId: organization.id,
+        });
 
+        await newBranchManager.save();
 
+        return res.status(201).json({
+            success: true,
+            message: "Branch Manager added successfully.",
+        });
     } catch (error) {
+        console.error("Error adding Branch Manager:", error);
+
+        // Handle MongoDB duplicate key error (E11000) only for EmployeeID, Email, or Phone
+        if (error.code === 11000) {
+            return res.status(409).json({
+                success: false,
+                message: "A Branch Manager with the same Employee ID, Email, or Phone already exists.",
+            });
+        }
+
         return res.status(500).json({
-            success : false,
-            message :`Error - ${error}`
-        })
-        
+            success: false,
+            message: "Something went wrong. Please try again later.",
+        });
     }
-}
+};
+
+
 exports.removeBranchManager = async(req,res)=>{
     try {
         const { id } = req.params;
@@ -248,45 +287,77 @@ exports.sendVerificationLink = async (req, res) => {
   }
 };
 exports.setPassword = async (req, res) => {
-  try {
-    const { token, password } = req.body;
-
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    const hashedPassword = await argon2.hash(password);
-
-    // Update user
-    const manager = await BranchManager.findByIdAndUpdate(
-      decoded.id,
-      {
-        Password: hashedPassword,
-        Verified: true
-      },
-      { new: true }
-    );
-
-    if (!manager) {
-      return res.status(404).json({
+    try {
+      const { token, password } = req.body;
+  
+      // Validate request body
+      if (!token || !password) {
+        return res.status(400).json({
+          success: false,
+          message: "Missing token or password.",
+        });
+      }
+  
+      let decoded;
+      try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          message:
+            error.name === "TokenExpiredError"
+              ? "The verification link has expired. Please ask your admin to resend the link."
+              : "Invalid token. Please ask your admin to resend the link.",
+        });
+      }
+  
+      // Ensure token contains a valid user ID
+      if (!decoded.id) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid token payload. Please request a new link.",
+        });
+      }
+  
+      // Hash password
+      let hashedPassword;
+      try {
+        hashedPassword = await argon2.hash(password);
+      } catch (error) {
+        return res.status(500).json({
+          success: false,
+          message: "Error hashing password. Please try again later.",
+        });
+      }
+  
+      // Update the Branch Manager's password
+      const manager = await BranchManager.findByIdAndUpdate(
+        decoded.id,
+        { Password: hashedPassword, Verified: true },
+        { new: true }
+      );
+  
+      if (!manager) {
+        return res.status(404).json({
+          success: false,
+          message: "Branch Manager not found. Please check the link or contact your admin.",
+        });
+      }
+  
+      return res.status(200).json({
+        success: true,
+        message: "Password has been set successfully. You can now log in.",
+      });
+  
+    } catch (error) {
+      console.error("Error setting password:", error);
+      return res.status(500).json({
         success: false,
-        message: "Manager not found"
+        message: "Something went wrong. Please try again later.",
       });
     }
-
-    return res.status(200).json({
-      success: true,
-      message: "Password set successfully"
-    });
-
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message === 'jwt expired' ? 
-        "Verification link has expired" : 
-        "Failed to set password"
-    });
-  }
-};
+  };
+  
 exports.login = async (req,res) =>{
     try{
         const {Email , Password} = req.body;
